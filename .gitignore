@@ -1,0 +1,32 @@
+# OS
+.DS_Store
+
+# Secrets and local env files
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.production.example
+
+# Dependencies
+**/node_modules/
+**/vendor/
+
+# Build artifacts
+**/dist/
+backend/public/build/
+backend/public/hot
+
+# Logs
+**/*.log
+backend/storage/logs/*.log
+
+# Database dumps
+*.sql
+
+# Local runtime/cache files
+**/.phpunit.result.cache
+**/.phpunit.cache/
+**/.fleet/
+**/.idea/
+**/.vscode/
+**/.zed/

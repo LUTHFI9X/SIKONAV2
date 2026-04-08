@@ -1,0 +1,16 @@
+{
+  "auditorStatus": {
+    "Biro Perencanaan Audit": {
+      "online": false,
+      "lastSeen": 0
+    },
+    "Biro Audit Operasional & Teknologi Informasi": {
+      "online": false,
+      "lastSeen": 1772697279390
+    },
+    "Biro Audit Keuangan & Fraud": {
+      "online": true,
+      "lastSeen": 1772760183077
+    }
+  }
+}
