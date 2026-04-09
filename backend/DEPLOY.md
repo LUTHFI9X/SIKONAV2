@@ -33,16 +33,17 @@ railway login
 2. Railway akan otomatis membuat database
 3. Klik MySQL service → **"Variables"** tab
 4. Catat variabel berikut:
-   - `MYSQL_HOST`
-   - `MYSQL_PORT`
-   - `MYSQL_DATABASE`
-   - `MYSQL_USER`
-   - `MYSQL_PASSWORD`
+  - `MYSQLHOST`
+  - `MYSQLPORT`
+  - `MYSQLDATABASE`
+  - `MYSQLUSER`
+  - `MYSQLPASSWORD`
 
 ### Step 5: Deploy Backend Laravel
 1. Klik **"+ New"** → **"GitHub Repo"**
 2. Pilih repository Anda
 3. Set **Root Directory** ke: `backend`
+4. Di **Service Settings → Config as Code**, set path file config ke: `/backend/railway.json`
 
 ### Step 6: Set Environment Variables
 Di Railway, tambahkan variabel berikut:
@@ -52,14 +53,16 @@ APP_NAME=SiKONA
 APP_ENV=production
 APP_KEY=base64:GENERATE_NEW_KEY
 APP_DEBUG=false
-APP_URL=${{RAILWAY_PUBLIC_DOMAIN}}
+APP_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}
 
 DB_CONNECTION=mysql
-DB_HOST=${{MySQL.MYSQL_HOST}}
-DB_PORT=${{MySQL.MYSQL_PORT}}
-DB_DATABASE=${{MySQL.MYSQL_DATABASE}}
-DB_USERNAME=${{MySQL.MYSQL_USER}}
-DB_PASSWORD=${{MySQL.MYSQL_PASSWORD}}
+DB_HOST=${{MySQL.MYSQLHOST}}
+DB_PORT=${{MySQL.MYSQLPORT}}
+DB_DATABASE=${{MySQL.MYSQLDATABASE}}
+DB_USERNAME=${{MySQL.MYSQLUSER}}
+DB_PASSWORD=${{MySQL.MYSQLPASSWORD}}
+
+LOG_CHANNEL=stderr
 
 SESSION_DRIVER=database
 CACHE_STORE=database
@@ -82,7 +85,7 @@ Buka Railway MySQL → **"Data"** tab → **"Import"** → Upload `database/siko
 Atau via terminal:
 ```bash
 # Connect ke Railway MySQL
-mysql -h $MYSQL_HOST -P $MYSQL_PORT -u $MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE < database/sikona_mysql.sql
+mysql -h $MYSQLHOST -P $MYSQLPORT -u $MYSQLUSER -p$MYSQLPASSWORD $MYSQLDATABASE < database/sikona_mysql.sql
 ```
 
 ### Step 9: Generate Public URL
