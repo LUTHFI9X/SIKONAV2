@@ -53,7 +53,8 @@ APP_NAME=SiKONA
 APP_ENV=production
 APP_KEY=base64:GENERATE_NEW_KEY
 APP_DEBUG=false
-APP_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}
+# Untuk deploy pertama, gunakan URL valid sederhana dulu
+APP_URL=http://localhost
 
 DB_CONNECTION=mysql
 DB_HOST=${{MySQL.MYSQLHOST}}
@@ -93,6 +94,7 @@ mysql -h $MYSQLHOST -P $MYSQLPORT -u $MYSQLUSER -p$MYSQLPASSWORD $MYSQLDATABASE 
 2. Klik **"Settings"** → **"Networking"**
 3. Klik **"Generate Domain"**
 4. API Anda tersedia di: `https://xxx.railway.app`
+5. Update `APP_URL` di service variables menjadi domain tersebut, lalu redeploy
 
 ---
 
