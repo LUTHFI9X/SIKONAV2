@@ -4,11 +4,16 @@ import Pusher from 'pusher-js';
 let echoInstance = null;
 let echoDisabledLogged = false;
 
-const DEFAULT_REVERB_CONFIG = {
-  key: 'qothysbfflfhyoj9xbt9',
-  host: 'sikonav2-production.up.railway.app',
-  port: 443,
-  scheme: 'https',
+const DISALLOWED_REVERB_HOSTS = new Set([
+  'sikonav2-production.up.railway.app',
+]);
+
+const disableRealtime = (message, error) => {
+  if (!echoDisabledLogged) {
+    console.warn(message, error);
+    echoDisabledLogged = true;
+  }
+  return null;
 };
 
 const toAbsoluteAuthEndpoint = (apiBase) => {
@@ -23,18 +28,18 @@ const toAbsoluteAuthEndpoint = (apiBase) => {
 export const getEcho = () => {
   if (echoInstance) return echoInstance;
 
-  const reverbKey = (import.meta.env.VITE_REVERB_APP_KEY || DEFAULT_REVERB_CONFIG.key).trim();
-  const reverbHost = (import.meta.env.VITE_REVERB_HOST || DEFAULT_REVERB_CONFIG.host).trim();
-  const rawPort = Number(import.meta.env.VITE_REVERB_PORT || DEFAULT_REVERB_CONFIG.port);
-  const reverbPort = Number.isFinite(rawPort) && rawPort > 0 ? rawPort : DEFAULT_REVERB_CONFIG.port;
-  const reverbScheme = (import.meta.env.VITE_REVERB_SCHEME || DEFAULT_REVERB_CONFIG.scheme) === 'http' ? 'http' : 'https';
+  const reverbKey = (import.meta.env.VITE_REVERB_APP_KEY || '').trim();
+  const reverbHost = (import.meta.env.VITE_REVERB_HOST || '').trim();
+  const rawPort = Number(import.meta.env.VITE_REVERB_PORT || 443);
+  const reverbPort = Number.isFinite(rawPort) && rawPort > 0 ? rawPort : 443;
+  const reverbScheme = (import.meta.env.VITE_REVERB_SCHEME || 'https') === 'http' ? 'http' : 'https';
 
-  if (!reverbKey) {
-    if (!echoDisabledLogged) {
-      console.warn('[Realtime] VITE_REVERB_APP_KEY is missing. Realtime features are disabled.');
-      echoDisabledLogged = true;
-    }
-    return null;
+  if (!reverbKey || !reverbHost) {
+    return disableRealtime('[Realtime] VITE_REVERB_APP_KEY or VITE_REVERB_HOST is missing. Realtime features are disabled.');
+  }
+
+  if (DISALLOWED_REVERB_HOSTS.has(reverbHost)) {
+    return disableRealtime('[Realtime] VITE_REVERB_HOST is still pointing to API service. Set it to the dedicated Railway Reverb domain.');
   }
 
   if (!window?.Pusher) {
@@ -63,11 +68,7 @@ export const getEcho = () => {
       },
     });
   } catch (error) {
-    if (!echoDisabledLogged) {
-      console.warn('[Realtime] Failed to initialize Echo. Realtime features are disabled.', error);
-      echoDisabledLogged = true;
-    }
-    return null;
+    return disableRealtime('[Realtime] Failed to initialize Echo. Realtime features are disabled.', error);
   }
 
   return echoInstance;
