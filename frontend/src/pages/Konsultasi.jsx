@@ -215,6 +215,10 @@ const Konsultasi = () => {
 
       setConversations((prev) => prev.map((c) => (c.id === conversationId ? { ...c, messages, unread: 0 } : c)));
       setSelectedChat((prev) => (prev && prev.id === conversationId ? { ...prev, messages, unread: 0 } : prev));
+    } catch (error) {
+      if (!silent) {
+        console.error('Failed to load messages:', error);
+      }
     } finally {
       if (!silent) setLoadingMessages(false);
     }
