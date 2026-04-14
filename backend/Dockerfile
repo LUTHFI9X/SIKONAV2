@@ -38,4 +38,4 @@ RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 EXPOSE 8000
 
 # Start Laravel server
-CMD ["sh", "-c", "if [ -z \"$APP_URL\" ] || [ \"$APP_URL\" = \"http://\" ] || [ \"$APP_URL\" = \"https://\" ] || echo \"$APP_URL\" | grep -Fq '${{'; then export APP_URL='http://localhost'; fi; php artisan optimize:clear || true; php artisan up || true; php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
+CMD ["sh", "-c", "if [ -z \"$APP_URL\" ] || [ \"$APP_URL\" = \"http://\" ] || [ \"$APP_URL\" = \"https://\" ] || echo \"$APP_URL\" | grep -Fq '${{'; then export APP_URL='http://localhost'; fi; PORT_VALUE=$(printf '%s' \"${PORT:-8000}\" | tr -cd '0-9'); if [ -z \"$PORT_VALUE\" ]; then PORT_VALUE=8000; fi; php artisan optimize:clear || true; php artisan up || true; php artisan serve --host=0.0.0.0 --port=$PORT_VALUE"]

@@ -73,6 +73,10 @@ FRONTEND_URL=https://your-frontend.com
 SANCTUM_STATEFUL_DOMAINS=your-frontend.com,localhost:5173
 ```
 
+Catatan penting:
+- Jangan set variabel `PORT` secara manual di Railway. Railway akan inject `PORT` otomatis.
+- Jika `PORT` diisi nilai non-numeric, Laravel `php artisan serve` bisa gagal saat boot.
+
 ### Step 7: Generate APP_KEY
 ```bash
 cd backend
