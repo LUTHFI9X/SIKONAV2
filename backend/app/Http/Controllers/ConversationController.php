@@ -262,6 +262,10 @@ class ConversationController extends Controller
 
     private function broadcastConversationUpdate(Conversation $conversation, string $eventType, array $meta = []): void
     {
+        if (!$this->shouldBroadcastRealtime()) {
+            return;
+        }
+
         try {
             broadcast(new ConversationUpdated($conversation->fresh(), $eventType, $meta));
         } catch (\Throwable $exception) {
@@ -271,5 +275,29 @@ class ConversationController extends Controller
                 'error' => $exception->getMessage(),
             ]);
         }
+    }
+
+    private function shouldBroadcastRealtime(): bool
+    {
+        if ((string) config('broadcasting.default') !== 'reverb') {
+            return false;
+        }
+
+        $reverbHost = trim((string) config('broadcasting.connections.reverb.options.host', ''));
+        if ($reverbHost === '') {
+            return false;
+        }
+
+        $requestHost = request()->getHost();
+        if ($requestHost && strcasecmp($reverbHost, $requestHost) === 0) {
+            return false;
+        }
+
+        $appHost = parse_url((string) config('app.url', ''), PHP_URL_HOST);
+        if ($appHost && strcasecmp($reverbHost, $appHost) === 0) {
+            return false;
+        }
+
+        return true;
     }
 }

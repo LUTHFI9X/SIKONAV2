@@ -11,8 +11,8 @@ import {
   IconShieldCheck
 } from '../components/Icons';
 
-const FALLBACK_CONVERSATION_SYNC_MS = 1200;
-const FALLBACK_MESSAGE_SYNC_MS = 1000;
+const FALLBACK_CONVERSATION_SYNC_MS = 2500;
+const FALLBACK_MESSAGE_SYNC_MS = 1800;
 const AUTO_PREVIEW_ATTACHMENTS = false;
 
 const Konsultasi = () => {
@@ -42,6 +42,8 @@ const Konsultasi = () => {
   const selectedChatRef = useRef(null);
   const conversationsRef = useRef([]);
   const hasLoadedConversationsRef = useRef(false);
+  const syncConversationsInFlightRef = useRef(false);
+  const syncMessagesInFlightRef = useRef(false);
   
   const [conversations, setConversations] = useState([]);
 
@@ -231,7 +233,13 @@ const Konsultasi = () => {
 
   useEffect(() => {
     const syncConversations = async () => {
-      await fetchData();
+      if (syncConversationsInFlightRef.current) return;
+      syncConversationsInFlightRef.current = true;
+      try {
+        await fetchData();
+      } finally {
+        syncConversationsInFlightRef.current = false;
+      }
     };
 
     syncConversations();
@@ -255,7 +263,12 @@ const Konsultasi = () => {
     if (!selectedChat?.id) return;
 
     const pollActiveMessages = setInterval(() => {
-      loadMessages(selectedChat.id, { silent: true });
+      if (syncMessagesInFlightRef.current) return;
+      syncMessagesInFlightRef.current = true;
+      loadMessages(selectedChat.id, { silent: true })
+        .finally(() => {
+          syncMessagesInFlightRef.current = false;
+        });
     }, FALLBACK_MESSAGE_SYNC_MS);
 
     return () => clearInterval(pollActiveMessages);

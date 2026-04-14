@@ -44,13 +44,15 @@ api.interceptors.response.use(
     }
 
     const originalRequest = error.config || {};
-    const shouldRetryWithFallback =
-      error.response?.status === 504
-      && !originalRequest.__retriedWithFallback
-      && typeof API_URL === 'string'
-      && API_URL.startsWith('/')
-      && typeof FALLBACK_API_URL === 'string'
-      && FALLBACK_API_URL.startsWith('http');
+    const isGatewayTimeout = error.response?.status === 504;
+    const isNetworkError = !error.response && (
+      error.code === 'ERR_NETWORK'
+      || /network\s*error/i.test(error.message || '')
+    );
+    const currentBaseURL = originalRequest.baseURL || API_URL;
+    const hasFallback = typeof FALLBACK_API_URL === 'string' && FALLBACK_API_URL.length > 0;
+    const canRetry = !originalRequest.__retriedWithFallback && hasFallback && FALLBACK_API_URL !== currentBaseURL;
+    const shouldRetryWithFallback = canRetry && (isGatewayTimeout || isNetworkError);
 
     if (shouldRetryWithFallback) {
       originalRequest.__retriedWithFallback = true;
