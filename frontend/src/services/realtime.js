@@ -4,6 +4,13 @@ import Pusher from 'pusher-js';
 let echoInstance = null;
 let echoDisabledLogged = false;
 
+const DEFAULT_REVERB_CONFIG = {
+  key: 'qothysbfflfhyoj9xbt9',
+  host: 'sikonav2-production.up.railway.app',
+  port: 443,
+  scheme: 'https',
+};
+
 const toAbsoluteAuthEndpoint = (apiBase) => {
   if (apiBase.startsWith('http://') || apiBase.startsWith('https://')) {
     return `${apiBase}/broadcasting/auth`;
@@ -16,7 +23,12 @@ const toAbsoluteAuthEndpoint = (apiBase) => {
 export const getEcho = () => {
   if (echoInstance) return echoInstance;
 
-  const reverbKey = (import.meta.env.VITE_REVERB_APP_KEY || '').trim();
+  const reverbKey = (import.meta.env.VITE_REVERB_APP_KEY || DEFAULT_REVERB_CONFIG.key).trim();
+  const reverbHost = (import.meta.env.VITE_REVERB_HOST || DEFAULT_REVERB_CONFIG.host).trim();
+  const rawPort = Number(import.meta.env.VITE_REVERB_PORT || DEFAULT_REVERB_CONFIG.port);
+  const reverbPort = Number.isFinite(rawPort) && rawPort > 0 ? rawPort : DEFAULT_REVERB_CONFIG.port;
+  const reverbScheme = (import.meta.env.VITE_REVERB_SCHEME || DEFAULT_REVERB_CONFIG.scheme) === 'http' ? 'http' : 'https';
+
   if (!reverbKey) {
     if (!echoDisabledLogged) {
       console.warn('[Realtime] VITE_REVERB_APP_KEY is missing. Realtime features are disabled.');
@@ -36,10 +48,10 @@ export const getEcho = () => {
     echoInstance = new Echo({
       broadcaster: 'reverb',
       key: reverbKey,
-      wsHost: import.meta.env.VITE_REVERB_HOST || window.location.hostname,
-      wsPort: Number(import.meta.env.VITE_REVERB_PORT || 8080),
-      wssPort: Number(import.meta.env.VITE_REVERB_PORT || 443),
-      forceTLS: (import.meta.env.VITE_REVERB_SCHEME || 'https') === 'https',
+      wsHost: reverbHost,
+      wsPort: reverbPort,
+      wssPort: reverbPort,
+      forceTLS: reverbScheme === 'https',
       enabledTransports: ['ws', 'wss'],
       authEndpoint: toAbsoluteAuthEndpoint(apiBase),
       auth: {
