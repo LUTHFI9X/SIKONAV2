@@ -10,8 +10,11 @@ const DISALLOWED_REVERB_HOSTS = new Set([
 ]);
 
 const disableRealtime = (message, error) => {
-  if (!echoDisabledLogged) {
+  if (!echoDisabledLogged && import.meta.env.DEV) {
     console.warn(message, error);
+    echoDisabledLogged = true;
+  }
+  if (!echoDisabledLogged) {
     echoDisabledLogged = true;
   }
   return null;

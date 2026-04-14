@@ -11,6 +11,10 @@ import {
   IconShieldCheck
 } from '../components/Icons';
 
+const FALLBACK_CONVERSATION_SYNC_MS = 1200;
+const FALLBACK_MESSAGE_SYNC_MS = 1000;
+const AUTO_PREVIEW_ATTACHMENTS = false;
+
 const Konsultasi = () => {
   const { user } = useAuth();
   const currentUser = user;
@@ -231,7 +235,7 @@ const Konsultasi = () => {
     };
 
     syncConversations();
-    const poller = setInterval(syncConversations, 3000);
+    const poller = setInterval(syncConversations, FALLBACK_CONVERSATION_SYNC_MS);
 
     const onFocus = () => syncConversations();
     window.addEventListener('focus', onFocus);
@@ -252,7 +256,7 @@ const Konsultasi = () => {
 
     const pollActiveMessages = setInterval(() => {
       loadMessages(selectedChat.id, { silent: true });
-    }, 2500);
+    }, FALLBACK_MESSAGE_SYNC_MS);
 
     return () => clearInterval(pollActiveMessages);
   }, [selectedChat?.id, loadMessages]);
@@ -295,6 +299,8 @@ const Konsultasi = () => {
   }, [selectedChat?.messages]);
 
   useEffect(() => {
+    if (!AUTO_PREVIEW_ATTACHMENTS) return;
+
     const pending = (selectedChat?.messages || []).filter((msg) => {
       return msg?.attachment?.id
         && isImageAttachment(msg?.attachment)
