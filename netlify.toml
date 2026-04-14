@@ -5,8 +5,8 @@
 
 [build.environment]
   NODE_VERSION = "22"
-  VITE_API_URL = "/api"
-  VITE_API_FALLBACK_URL = "https://sikonav2-production.up.railway.app/api"
+  VITE_API_URL = "https://sikonav2-production.up.railway.app/api"
+  VITE_API_FALLBACK_URL = "/api"
   VITE_REVERB_APP_KEY = "qothysbfflfhyoj9xbt9"
   VITE_REVERB_HOST = "sikonav2-production.up.railway.app"
   VITE_REVERB_PORT = "443"
