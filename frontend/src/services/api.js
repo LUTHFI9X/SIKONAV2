@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
+const FALLBACK_API_URL = import.meta.env.VITE_API_FALLBACK_URL || 'https://sikonav2-production.up.railway.app/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -26,11 +27,27 @@ api.interceptors.request.use(
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
+
+    const originalRequest = error.config || {};
+    const shouldRetryWithFallback =
+      error.response?.status === 504
+      && !originalRequest.__retriedWithFallback
+      && typeof API_URL === 'string'
+      && API_URL.startsWith('/')
+      && typeof FALLBACK_API_URL === 'string'
+      && FALLBACK_API_URL.startsWith('http');
+
+    if (shouldRetryWithFallback) {
+      originalRequest.__retriedWithFallback = true;
+      originalRequest.baseURL = FALLBACK_API_URL;
+      return api.request(originalRequest);
+    }
+
     return Promise.reject(error);
   }
 );
