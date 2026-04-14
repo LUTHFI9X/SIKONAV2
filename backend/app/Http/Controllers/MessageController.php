@@ -98,13 +98,13 @@ class MessageController extends Controller
             return response()->json(['message' => 'No attachment found'], 404);
         }
 
-        $disk = Storage::disk('public');
-
-        if (!$disk->exists($message->attachment_path)) {
-            return response()->json(['message' => 'Attachment file not found on server'], 404);
-        }
-
         try {
+            $disk = Storage::disk('public');
+
+            if (!$disk->exists($message->attachment_path)) {
+                return response()->json(['message' => 'Attachment file not found on server'], 404);
+            }
+
             return $disk->download(
                 $message->attachment_path,
                 $message->attachment_name
