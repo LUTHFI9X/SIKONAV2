@@ -4,6 +4,18 @@ import Pusher from 'pusher-js';
 let echoInstance = null;
 let echoDisabledLogged = false;
 
+const DISALLOWED_REVERB_HOSTS = new Set([
+  'sikonav2-production.up.railway.app',
+]);
+
+const disableRealtime = (message, error) => {
+  if (!echoDisabledLogged) {
+    console.warn(message, error);
+    echoDisabledLogged = true;
+  }
+  return null;
+};
+
 const toAbsoluteAuthEndpoint = (apiBase) => {
   if (apiBase.startsWith('http://') || apiBase.startsWith('https://')) {
     return `${apiBase}/broadcasting/auth`;
@@ -17,12 +29,14 @@ export const getEcho = () => {
   if (echoInstance) return echoInstance;
 
   const reverbKey = (import.meta.env.VITE_REVERB_APP_KEY || '').trim();
-  if (!reverbKey) {
-    if (!echoDisabledLogged) {
-      console.warn('[Realtime] VITE_REVERB_APP_KEY is missing. Realtime features are disabled.');
-      echoDisabledLogged = true;
-    }
-    return null;
+  const reverbHost = (import.meta.env.VITE_REVERB_HOST || '').trim();
+
+  if (!reverbKey || !reverbHost) {
+    return disableRealtime('[Realtime] VITE_REVERB_APP_KEY or VITE_REVERB_HOST is missing. Realtime features are disabled.');
+  }
+
+  if (DISALLOWED_REVERB_HOSTS.has(reverbHost)) {
+    return disableRealtime('[Realtime] VITE_REVERB_HOST is still using API domain. Set it to the dedicated Railway Reverb domain.');
   }
 
   if (!window?.Pusher) {
@@ -36,7 +50,7 @@ export const getEcho = () => {
     echoInstance = new Echo({
       broadcaster: 'reverb',
       key: reverbKey,
-      wsHost: import.meta.env.VITE_REVERB_HOST || window.location.hostname,
+      wsHost: reverbHost,
       wsPort: Number(import.meta.env.VITE_REVERB_PORT || 8080),
       wssPort: Number(import.meta.env.VITE_REVERB_PORT || 443),
       forceTLS: (import.meta.env.VITE_REVERB_SCHEME || 'https') === 'https',
@@ -51,11 +65,7 @@ export const getEcho = () => {
       },
     });
   } catch (error) {
-    if (!echoDisabledLogged) {
-      console.warn('[Realtime] Failed to initialize Echo. Realtime features are disabled.', error);
-      echoDisabledLogged = true;
-    }
-    return null;
+    return disableRealtime('[Realtime] Failed to initialize Echo. Realtime features are disabled.', error);
   }
 
   return echoInstance;

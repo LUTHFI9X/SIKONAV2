@@ -21,6 +21,7 @@ const Konsultasi = () => {
   const [attachment, setAttachment] = useState(null);
   const [attachmentPreviewUrls, setAttachmentPreviewUrls] = useState({});
   const attachmentPreviewUrlsRef = useRef({});
+  const failedAttachmentPreviewIdsRef = useRef(new Set());
   const [imageViewer, setImageViewer] = useState({
     open: false,
     url: '',
@@ -295,7 +296,10 @@ const Konsultasi = () => {
 
   useEffect(() => {
     const pending = (selectedChat?.messages || []).filter((msg) => {
-      return msg?.attachment?.id && isImageAttachment(msg?.attachment) && !attachmentPreviewUrls[msg.attachment.id];
+      return msg?.attachment?.id
+        && isImageAttachment(msg?.attachment)
+        && !attachmentPreviewUrls[msg.attachment.id]
+        && !failedAttachmentPreviewIdsRef.current.has(msg.attachment.id);
     });
 
     if (pending.length === 0) return;
@@ -318,6 +322,7 @@ const Konsultasi = () => {
           setAttachmentPreviewUrls((prev) => ({ ...prev, [msg.attachment.id]: url }));
         } catch {
           // Ignore preview load failure; filename download still available.
+          failedAttachmentPreviewIdsRef.current.add(msg.attachment.id);
         }
       }
     };

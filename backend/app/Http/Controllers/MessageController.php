@@ -98,10 +98,26 @@ class MessageController extends Controller
             return response()->json(['message' => 'No attachment found'], 404);
         }
 
-        return Storage::disk('public')->download(
-            $message->attachment_path,
-            $message->attachment_name
-        );
+        $disk = Storage::disk('public');
+
+        if (!$disk->exists($message->attachment_path)) {
+            return response()->json(['message' => 'Attachment file not found on server'], 404);
+        }
+
+        try {
+            return $disk->download(
+                $message->attachment_path,
+                $message->attachment_name
+            );
+        } catch (\Throwable $exception) {
+            Log::warning('Attachment download failed.', [
+                'message_id' => $message->id,
+                'path' => $message->attachment_path,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return response()->json(['message' => 'Attachment file not available'], 404);
+        }
     }
 
     private function broadcastConversationUpdate(Conversation $conversation, string $eventType, array $meta = []): void
