@@ -2,6 +2,16 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 const FALLBACK_API_URL = import.meta.env.VITE_API_FALLBACK_URL || 'https://sikonav2-production.up.railway.app/api';
+const PUBLIC_AUTH_API_URL = import.meta.env.VITE_PUBLIC_AUTH_API_URL || '/api';
+
+const publicAuthApi = axios.create({
+  baseURL: PUBLIC_AUTH_API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+  withCredentials: false,
+});
 
 const api = axios.create({
   baseURL: API_URL,
@@ -54,9 +64,9 @@ api.interceptors.response.use(
 
 // Auth API
 export const authAPI = {
-  login: (payload) => api.post('/login', payload),
-  loginOptions: () => api.get('/login-options'),
-  register: (data) => api.post('/register', data),
+  login: (payload) => publicAuthApi.post('/login', payload),
+  loginOptions: () => publicAuthApi.get('/login-options'),
+  register: (data) => publicAuthApi.post('/register', data),
   logout: () => api.post('/logout'),
   me: () => api.get('/me'),
   updateProfile: (data) => api.put('/profile', data),
