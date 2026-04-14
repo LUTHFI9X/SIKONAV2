@@ -35,10 +35,10 @@ jobs:
         working-directory: frontend
         env:
           VITE_API_URL: /api
-          VITE_REVERB_APP_KEY: ${{ secrets.VITE_REVERB_APP_KEY }}
-          VITE_REVERB_HOST: ${{ secrets.VITE_REVERB_HOST }}
-          VITE_REVERB_PORT: ${{ secrets.VITE_REVERB_PORT }}
-          VITE_REVERB_SCHEME: ${{ secrets.VITE_REVERB_SCHEME }}
+          VITE_REVERB_APP_KEY: ${{ secrets.VITE_REVERB_APP_KEY || 'qothysbfflfhyoj9xbt9' }}
+          VITE_REVERB_HOST: ${{ secrets.VITE_REVERB_HOST || 'sikonav2-production.up.railway.app' }}
+          VITE_REVERB_PORT: ${{ secrets.VITE_REVERB_PORT || '443' }}
+          VITE_REVERB_SCHEME: ${{ secrets.VITE_REVERB_SCHEME || 'https' }}
 
       - name: Deploy to Netlify
         run: npx netlify-cli deploy --prod --dir=frontend/dist --site="$NETLIFY_SITE_ID" --auth="$NETLIFY_AUTH_TOKEN"
