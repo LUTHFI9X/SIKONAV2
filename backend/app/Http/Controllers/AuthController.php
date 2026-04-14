@@ -33,6 +33,22 @@ class AuthController extends Controller
         return $user->role === 'admin' || ($user->role === 'manajemen' && $user->sub_role === 'admin');
     }
 
+    private function realtimeConfigPayload(): array
+    {
+        $key = (string) config('broadcasting.connections.reverb.key', '');
+        $host = (string) config('broadcasting.connections.reverb.options.host', '');
+        $port = (int) config('broadcasting.connections.reverb.options.port', 443);
+        $scheme = (string) config('broadcasting.connections.reverb.options.scheme', 'https');
+
+        return [
+            'enabled' => $key !== '' && $host !== '',
+            'key' => $key !== '' ? $key : null,
+            'host' => $host !== '' ? $host : null,
+            'port' => $port > 0 ? $port : 443,
+            'scheme' => $scheme === 'http' ? 'http' : 'https',
+        ];
+    }
+
     public function register(Request $request)
     {
         $request->validate([
@@ -257,6 +273,7 @@ class AuthController extends Controller
             'token' => $token,
             'must_change_password' => $user->must_change_password,
             'password_expired' => $passwordExpired,
+            'realtime' => $this->realtimeConfigPayload(),
         ]);
     }
 
@@ -284,6 +301,7 @@ class AuthController extends Controller
             'user' => $user,
             'must_change_password' => $user->must_change_password,
             'password_expired' => $user->isPasswordExpired(),
+            'realtime' => $this->realtimeConfigPayload(),
         ]);
     }
 

@@ -7,6 +7,7 @@ const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 menit
 const HEARTBEAT_INTERVAL_MS = 20000; // 20 detik
 const IDLE_EVENTS = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
 const ANONYMOUS_SESSION_KEY = 'auditee_is_anonymous';
+const REALTIME_CONFIG_KEY = 'sikona_realtime_config';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -15,6 +16,25 @@ export const AuthProvider = ({ children }) => {
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [passwordExpired, setPasswordExpired] = useState(false);
   const idleTimerRef = useRef(null);
+
+  const persistRealtimeConfig = useCallback((realtime) => {
+    if (!realtime || typeof realtime !== 'object') return;
+
+    const key = typeof realtime.key === 'string' ? realtime.key.trim() : '';
+    const host = typeof realtime.host === 'string' ? realtime.host.trim() : '';
+    const portCandidate = Number(realtime.port);
+    const port = Number.isFinite(portCandidate) && portCandidate > 0 ? portCandidate : 443;
+    const scheme = realtime.scheme === 'http' ? 'http' : 'https';
+
+    if (!key || !host) return;
+
+    localStorage.setItem(REALTIME_CONFIG_KEY, JSON.stringify({
+      key,
+      host,
+      port,
+      scheme,
+    }));
+  }, []);
 
   // Idle timeout — auto logout after 30 min of inactivity
   const resetIdleTimer = useCallback(() => {
@@ -72,6 +92,7 @@ export const AuthProvider = ({ children }) => {
           // Check password flags
           if (response.data.must_change_password) setMustChangePassword(true);
           if (response.data.password_expired) setPasswordExpired(true);
+          persistRealtimeConfig(response.data.realtime);
         } catch (error) {
           // Token invalid, clear storage
           localStorage.removeItem('token');
@@ -83,7 +104,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     initAuth();
-  }, []);
+  }, [persistRealtimeConfig]);
 
   useEffect(() => {
     if (!token) return;
@@ -95,6 +116,7 @@ export const AuthProvider = ({ children }) => {
           const userData = response.data.user;
           const isAnonymous = userData?.role === 'auditee' && localStorage.getItem(ANONYMOUS_SESSION_KEY) === '1';
           setUser(isAnonymous ? { ...userData, isAnonymous: true } : userData);
+          persistRealtimeConfig(response.data.realtime);
         }
       } catch (error) {
         // 401 is handled by interceptor and will redirect to login
@@ -104,7 +126,7 @@ export const AuthProvider = ({ children }) => {
 
     const timer = setInterval(heartbeat, HEARTBEAT_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [token]);
+  }, [token, persistRealtimeConfig]);
 
   const login = async (payload) => {
     try {
@@ -122,6 +144,7 @@ export const AuthProvider = ({ children }) => {
       setUser(isAnonymous ? { ...user, isAnonymous: true } : user);
       setMustChangePassword(!!response.data.must_change_password);
       setPasswordExpired(!!response.data.password_expired);
+      persistRealtimeConfig(response.data.realtime);
       
       return user;
     } catch (error) {
@@ -140,6 +163,7 @@ export const AuthProvider = ({ children }) => {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
       localStorage.removeItem('token');
       localStorage.removeItem(ANONYMOUS_SESSION_KEY);
+      localStorage.removeItem(REALTIME_CONFIG_KEY);
       setToken(null);
       setUser(null);
       setMustChangePassword(false);
