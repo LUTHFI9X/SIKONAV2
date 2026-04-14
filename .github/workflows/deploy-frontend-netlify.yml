@@ -33,6 +33,12 @@ jobs:
       - name: Build frontend
         run: npm run build
         working-directory: frontend
+        env:
+          VITE_API_URL: /api
+          VITE_REVERB_APP_KEY: ${{ secrets.VITE_REVERB_APP_KEY }}
+          VITE_REVERB_HOST: ${{ secrets.VITE_REVERB_HOST }}
+          VITE_REVERB_PORT: ${{ secrets.VITE_REVERB_PORT }}
+          VITE_REVERB_SCHEME: ${{ secrets.VITE_REVERB_SCHEME }}
 
       - name: Deploy to Netlify
         run: npx netlify-cli deploy --prod --dir=frontend/dist --site="$NETLIFY_SITE_ID" --auth="$NETLIFY_AUTH_TOKEN"
