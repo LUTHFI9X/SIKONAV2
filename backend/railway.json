@@ -11,7 +11,7 @@
       "php artisan migrate --force",
       "php artisan db:seed --class=UserSeeder --force"
     ],
-    "startCommand": "sh -lc 'PORT_VALUE=$(printf \"%s\" \"$PORT\" | tr -cd \"0-9\"); [ -n \"$PORT_VALUE\" ] || PORT_VALUE=8080; php artisan optimize:clear || true; php artisan up || true; php -S 0.0.0.0:$PORT_VALUE -t public public/index.php'",
+    "startCommand": "sh -lc 'PORT_VALUE=$(printf \"%s\" \"$PORT\" | tr -cd \"0-9\"); [ -n \"$PORT_VALUE\" ] || PORT_VALUE=8080; php artisan optimize:clear || true; php artisan migrate --force; php artisan db:seed --class=UserSeeder --force || true; php artisan up || true; php -S 0.0.0.0:$PORT_VALUE -t public public/index.php'",
     "healthcheckPath": "/up",
     "healthcheckTimeout": 300,
     "numReplicas": 1,
