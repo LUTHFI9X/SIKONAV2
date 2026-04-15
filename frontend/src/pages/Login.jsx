@@ -8,7 +8,7 @@ import {
   IconUserShield, IconBriefcase, IconLock, IconArrowRight, IconWave,
   IconCheckCircle, IconEye
 } from '../components/Icons';
-import { SikonaWordmark } from '../components/SikonaLogo';
+import { SikonaLogoHorizontal, SikonaWordmark } from '../components/SikonaLogo';
 
 const Login = () => {
   const baseUrl = import.meta.env.BASE_URL || '/';
@@ -184,17 +184,8 @@ const Login = () => {
       {/* ═══ RIGHT PANEL — LOGIN FORM ═══ */}
       <div className="login-right-panel login-enterprise-surface w-full md:w-[540px] lg:w-[560px] bg-gradient-to-b from-slate-100 via-white to-slate-100 flex flex-col relative overflow-y-auto">
         {/* Mobile header */}
-        <div className="login-mobile-header md:hidden bg-gradient-to-br from-[#2f3796] to-[#7a61ef] p-4 sm:p-6 text-center">
-          <img
-            src={sikonaLogoSvg}
-            alt="SiKONA"
-            className="h-11 sm:h-12 w-auto mx-auto object-contain drop-shadow-md"
-            onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src = sikonaLogoFallback;
-            }}
-          />
-          <p className="text-[#ddd6ff] text-xs mt-2 tracking-wide">Sistem Konsultasi Audit</p>
+        <div className="login-mobile-header md:hidden p-4 sm:p-5 text-center">
+          <SikonaLogoHorizontal iconSize={46} className="justify-center" />
         </div>
 
         <div className="login-form-wrap relative z-10 flex-1 flex items-start md:items-start 2xl:items-center justify-center p-3 sm:p-5 lg:p-8">

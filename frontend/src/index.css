@@ -1447,6 +1447,8 @@ input:checked + .slider:before {
   }
 
   .login-mobile-header {
+    background: linear-gradient(118deg, #111322 0%, #1a1a36 50%, #2a2550 100%);
+    border-bottom: 1px solid rgba(167, 139, 250, 0.26);
     box-shadow: 0 10px 28px rgba(30, 41, 59, 0.24);
   }
 
