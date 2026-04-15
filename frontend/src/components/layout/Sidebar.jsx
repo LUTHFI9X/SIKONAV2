@@ -141,7 +141,7 @@ const Sidebar = ({ mobileOpen = false, onClose }) => {
   const adminMenuItems = menuItems.filter(item => item.isAdmin);
 
   return (
-    <aside className={`sidebar z-[120] transform-gpu transition-transform duration-300 ease-out ${mobileOpen ? 'translate-x-0 shadow-2xl shadow-slate-950/45' : '-translate-x-full'} lg:translate-x-0 lg:shadow-none`}>
+    <aside className={`sidebar z-[120] transition-transform duration-300 ease-out ${mobileOpen ? 'translate-x-0 shadow-2xl shadow-slate-950/45' : '-translate-x-full'} lg:translate-x-0 lg:shadow-none`}>
       {/* Logo Section */}
       <div className="p-5 mb-2 relative">
         <button
