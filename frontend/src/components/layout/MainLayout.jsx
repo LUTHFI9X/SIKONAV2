@@ -338,7 +338,7 @@ const MainLayout = () => {
           type="button"
           aria-label="Tutup menu"
           onClick={() => setMobileSidebarOpen(false)}
-          className="fixed inset-0 z-[110] bg-slate-950/55 lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/28 lg:hidden"
         />
       )}
       <div className="lg:ml-[296px] h-screen flex flex-col overflow-hidden">
