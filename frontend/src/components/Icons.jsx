@@ -218,6 +218,12 @@ export const IconSearch = ({ className }) => (
   </SvgIcon>
 );
 
+export const IconMenu = ({ className }) => (
+  <SvgIcon className={className}>
+    <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </SvgIcon>
+);
+
 export const IconArrowLeft = ({ className }) => (
   <SvgIcon className={className}>
     <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

@@ -6,11 +6,11 @@ import { conversationAPI } from '../../services/api';
 import {
   IconDashboard, IconMessage, IconPaperPlane, IconChartBar, IconListCheck,
   IconBuilding, IconUserGroup, IconUsersGear, IconUserPlus, IconGear, IconLogout,
-  IconHistory, IconSliders, IconKey, IconDatabase, IconFileAlt
+  IconHistory, IconSliders, IconKey, IconDatabase, IconFileAlt, IconX
 } from '../Icons';
 import { SikonaWordmark } from '../SikonaLogo';
 
-const Sidebar = () => {
+const Sidebar = ({ mobileOpen = false, onClose }) => {
   const { user, logout } = useAuth();
   const { t } = useUX();
   const navigate = useNavigate();
@@ -21,8 +21,13 @@ const Sidebar = () => {
   const sikonaLogoFallback = `${baseUrl}images/SiKONA_logo_transparent.png`;
 
   const handleLogout = async () => {
+    if (typeof onClose === 'function') onClose();
     await logout();
     navigate('/login');
+  };
+
+  const closeMobileSidebar = () => {
+    if (typeof onClose === 'function') onClose();
   };
 
   useEffect(() => {
@@ -136,9 +141,17 @@ const Sidebar = () => {
   const adminMenuItems = menuItems.filter(item => item.isAdmin);
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar z-[120] transform-gpu transition-transform duration-300 ease-out ${mobileOpen ? 'translate-x-0 shadow-2xl shadow-slate-950/45' : '-translate-x-full'} lg:translate-x-0 lg:shadow-none`}>
       {/* Logo Section */}
       <div className="p-5 mb-2 relative">
+        <button
+          type="button"
+          onClick={closeMobileSidebar}
+          aria-label="Tutup sidebar"
+          className="lg:hidden absolute top-3 right-3 w-8 h-8 rounded-lg border border-violet-400/25 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20 flex items-center justify-center"
+        >
+          <IconX className="w-4 h-4" />
+        </button>
         <div className="flex items-center justify-center gap-3">
           <img
             src={sikonaLogoSvg}
@@ -171,6 +184,7 @@ const Sidebar = () => {
             )}
             <NavLink
               to={item.path}
+              onClick={closeMobileSidebar}
               className={({ isActive }) => `nav-link group ${isActive ? 'active' : ''}`}
             >
               <item.Icon className={`w-5 h-5 transition-transform duration-300 ${item.iconHover || ''}`} />
@@ -196,6 +210,7 @@ const Sidebar = () => {
               <NavLink
                 key={item.path}
                 to={item.path}
+                onClick={closeMobileSidebar}
                 className={({ isActive }) => `nav-link group ${isActive ? 'active' : ''}`}
               >
                 <item.Icon className={`w-5 h-5 transition-transform duration-300 ${item.iconHover || ''}`} />
@@ -214,6 +229,7 @@ const Sidebar = () => {
         {(currentUser?.role === 'auditor' || currentUser?.role === 'admin' || (currentUser?.role === 'manajemen' && currentUser?.sub_role === 'admin')) && (
           <NavLink 
             to="/profile" 
+            onClick={closeMobileSidebar}
             className={({ isActive }) => `flex items-center gap-3 px-4 py-3 text-violet-300 hover:bg-violet-500/10 hover:text-white rounded-xl cursor-pointer transition-all duration-300 font-semibold text-sm group ${isActive ? 'bg-violet-500/10 text-white' : ''}`}
           >
             <IconGear className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />

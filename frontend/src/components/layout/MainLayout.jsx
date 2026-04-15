@@ -3,7 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUX } from '../../contexts/UXContext';
 import { conversationAPI, activityLogAPI } from '../../services/api';
-import { IconUser, IconMoon, IconSun, IconBell, IconClock, IconGear, IconChevronDown } from '../Icons';
+import { IconUser, IconMoon, IconSun, IconBell, IconClock, IconGear, IconChevronDown, IconMenu, IconX } from '../Icons';
 import Sidebar from './Sidebar';
 
 const MainLayout = () => {
@@ -22,6 +22,7 @@ const MainLayout = () => {
   const [showUxTip, setShowUxTip] = useState(() => localStorage.getItem('sikona-ux-tip-dismissed') !== '1');
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const notifRef = useRef(null);
   const settingsRef = useRef(null);
   const commandInputRef = useRef(null);
@@ -155,12 +156,28 @@ const MainLayout = () => {
         setCommandOpen(false);
         setSettingsOpen(false);
         setNotifOpen(false);
+        setOnboardingOpen(false);
+        setMobileSidebarOpen(false);
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
+
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!mobileSidebarOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileSidebarOpen]);
 
   useEffect(() => {
     if (commandOpen) {
@@ -315,14 +332,30 @@ const MainLayout = () => {
 
   return (
     <div className={`min-h-screen h-screen overflow-hidden transition-colors duration-300 ${isNightMode ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950' : 'bg-gradient-to-br from-[#f0f4ff] via-[#faf5ff] to-[#f0fdfa]'}`}>
-      <Sidebar />
-      <div className="ml-[296px] h-screen flex flex-col overflow-hidden">
+      <Sidebar mobileOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
+      {mobileSidebarOpen && (
+        <button
+          type="button"
+          aria-label="Tutup menu"
+          onClick={() => setMobileSidebarOpen(false)}
+          className="fixed inset-0 z-[110] bg-slate-950/55 backdrop-blur-sm lg:hidden"
+        />
+      )}
+      <div className="lg:ml-[296px] h-screen flex flex-col overflow-hidden">
         {/* Modern Header */}
-        <header className={`h-[72px] min-h-[72px] backdrop-blur-xl border-b px-8 flex items-center justify-between z-40 transition-colors duration-300 ${isNightMode ? 'bg-slate-900/80 border-slate-700/70' : 'bg-white/80 border-slate-200/80'}`}>
-          <div className="flex items-center gap-4">
-            <h2 className={`text-xl font-bold ${isNightMode ? 'text-slate-100' : 'text-slate-800'}`}>{getPageTitle()}</h2>
+        <header className={`h-[72px] min-h-[72px] backdrop-blur-xl border-b px-3 sm:px-4 lg:px-8 flex items-center justify-between z-40 transition-colors duration-300 ${isNightMode ? 'bg-slate-900/80 border-slate-700/70' : 'bg-white/80 border-slate-200/80'}`}>
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(true)}
+              aria-label="Buka menu"
+              className={`lg:hidden w-10 h-10 rounded-xl border flex items-center justify-center transition-colors ${isNightMode ? 'bg-slate-800 border-slate-600 text-slate-200 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+            >
+              <IconMenu className="w-5 h-5" />
+            </button>
+            <h2 className={`text-base sm:text-lg lg:text-xl font-bold truncate ${isNightMode ? 'text-slate-100' : 'text-slate-800'}`}>{getPageTitle()}</h2>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 sm:gap-4 lg:gap-6">
             <div className="relative" ref={notifRef}>
               <button
                 onClick={() => setNotifOpen((prev) => !prev)}
@@ -438,7 +471,7 @@ const MainLayout = () => {
 
             <button
               onClick={() => setIsNightMode((prev) => !prev)}
-              className={`relative inline-flex items-center h-11 w-[142px] px-1.5 rounded-2xl border text-xs font-bold transition-all ${isNightMode ? 'bg-slate-800 border-slate-600 text-slate-200 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+              className={`hidden md:inline-flex relative items-center h-11 w-[142px] px-1.5 rounded-2xl border text-xs font-bold transition-all ${isNightMode ? 'bg-slate-800 border-slate-600 text-slate-200 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
               title="Toggle Night Mode"
             >
               <span className={`absolute top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl transition-all duration-300 ${isNightMode ? 'left-[41px] bg-indigo-500/25' : 'left-[6px] bg-amber-100'}`} />
@@ -453,14 +486,14 @@ const MainLayout = () => {
               </span>
             </button>
             {/* User Profile */}
-            <div className={`flex items-center gap-4 pl-4 border-l ${isNightMode ? 'border-slate-700' : 'border-slate-200'}`}>
-              <div className="text-right">
+            <div className={`flex items-center gap-2 sm:gap-4 pl-2 sm:pl-4 border-l ${isNightMode ? 'border-slate-700' : 'border-slate-200'}`}>
+              <div className="hidden xl:block text-right">
                 <p className={`text-sm font-bold ${isNightMode ? 'text-slate-100' : 'text-slate-900'}`}>
                   {currentUser?.role === 'auditee' && currentUser?.isAnonymous ? 'Anonim' : (currentUser?.name || 'User')}
                 </p>
                 <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider">{getRoleDisplay()}</p>
               </div>
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white shadow-lg ${
+              <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-white shadow-lg ${
                 currentUser?.role === 'auditee' && currentUser?.isAnonymous
                   ? 'bg-gradient-to-br from-slate-500 to-slate-700 shadow-slate-500/20'
                   : 'bg-gradient-to-br from-indigo-500 to-purple-600 shadow-indigo-500/20'
@@ -474,7 +507,7 @@ const MainLayout = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-8">
           {showUxTip && (
             <div className={`mb-5 rounded-xl border px-4 py-3 flex items-start justify-between gap-3 ${isNightMode ? 'bg-indigo-950/30 border-indigo-800 text-indigo-100' : 'bg-indigo-50 border-indigo-200 text-indigo-700'}`}>
               <p className="text-sm font-medium">{t('ux.quickTip', 'Tip cepat: tekan Cmd/Ctrl + K untuk pindah halaman lebih cepat.')}</p>
@@ -532,11 +565,19 @@ const MainLayout = () => {
       )}
 
       {onboardingOpen && (
-        <div className="fixed inset-0 z-[130] bg-black/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-5" onClick={() => closeOnboarding()}>
+        <div className="fixed inset-0 z-[130] bg-black/60 backdrop-blur-md flex items-start sm:items-center justify-center p-2 sm:p-5 overflow-y-auto" onClick={() => closeOnboarding()}>
           <div
-            className={`onboarding-premium-shell w-full max-w-5xl rounded-3xl border shadow-2xl overflow-hidden ${isNightMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}
+            className={`onboarding-premium-shell my-2 sm:my-0 w-full max-w-5xl max-h-[96vh] max-h-[96dvh] rounded-3xl border shadow-2xl overflow-y-auto lg:overflow-hidden ${isNightMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}
             onClick={(e) => e.stopPropagation()}
           >
+            <button
+              type="button"
+              aria-label="Tutup panduan"
+              onClick={() => closeOnboarding()}
+              className={`lg:hidden sticky top-2 right-2 ml-auto mr-2 mt-2 z-20 w-9 h-9 rounded-full border flex items-center justify-center ${isNightMode ? 'bg-slate-900/90 border-slate-600 text-slate-200' : 'bg-white/90 border-slate-300 text-slate-700'}`}
+            >
+              <IconX className="w-4 h-4" />
+            </button>
             <div className="grid lg:grid-cols-[280px_minmax(0,1fr)]">
               <aside className={`onboarding-premium-rail p-5 sm:p-6 border-b lg:border-b-0 lg:border-r ${isNightMode ? 'border-slate-700' : 'border-slate-100'}`}>
                 <p className={`text-[11px] uppercase tracking-[0.22em] font-bold ${isNightMode ? 'text-indigo-300' : 'text-indigo-600'}`}>
@@ -585,7 +626,7 @@ const MainLayout = () => {
                 </div>
               </aside>
 
-              <div className="flex flex-col min-h-[520px]">
+              <div className="flex flex-col min-h-[420px] sm:min-h-[520px]">
                 <div className={`px-5 sm:px-7 py-5 border-b ${isNightMode ? 'border-slate-700' : 'border-slate-100'}`}>
                   <div className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-400/30">
                     {onboardingSteps[onboardingStep]?.eyebrow}
