@@ -31,6 +31,8 @@ const Login = () => {
 
   useEffect(() => {
     document.documentElement.classList.remove('night-mode');
+    document.body.classList.add('login-active');
+    document.getElementById('root')?.classList.add('login-root-active');
 
     const fetchLoginOptions = async () => {
       setOptionsLoading(true);
@@ -49,6 +51,11 @@ const Login = () => {
     };
 
     fetchLoginOptions();
+
+    return () => {
+      document.body.classList.remove('login-active');
+      document.getElementById('root')?.classList.remove('login-root-active');
+    };
   }, []);
 
   const roleAccountOptions = useMemo(() => {
@@ -185,7 +192,7 @@ const Login = () => {
           <p className="text-[#ddd6ff] text-xs mt-1">Sistem Konsultasi Audit</p>
         </div>
 
-        <div className="relative z-10 flex-1 flex items-start md:items-center justify-center p-5 sm:p-6 lg:p-10">
+        <div className="login-form-wrap relative z-10 flex-1 flex items-start md:items-start 2xl:items-center justify-center p-4 sm:p-5 lg:p-8">
           <div className="w-full max-w-md pb-2 lg:pb-0 login-enterprise-content">
 
             {/* ─── Co-branded Header ─── */}
@@ -222,7 +229,7 @@ const Login = () => {
             </div>
 
             {/* ─── Welcome Section ─── */}
-            <div className="mb-7 text-center">
+            <div className="login-welcome mb-7 text-center">
               <h2 className="text-2xl font-extrabold text-slate-900 inline-flex items-center gap-2.5">
                 Selamat Datang <IconWave className="w-7 h-7 text-[#8f6fff]" />
               </h2>
@@ -230,7 +237,7 @@ const Login = () => {
             </div>
 
             {/* ─── Security Warning Banner ─── */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-5">
+            <div className="login-security-note bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-5">
               <div className="flex items-start gap-2.5">
                 <IconShield className="w-4 h-4 text-[#3f4cae] mt-0.5 flex-shrink-0" />
                 <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
@@ -243,7 +250,7 @@ const Login = () => {
             <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mb-6"></div>
 
             {/* ─── Role Selector Cards ─── */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-7">
+            <div className="login-role-grid grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-7">
               {roles.map((r) => {
                 const isActive = selectedRole === r.id;
                 return (

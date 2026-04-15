@@ -38,6 +38,17 @@ body {
   overflow: hidden;
 }
 
+body.login-active {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#root.login-root-active {
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: auto;
+}
+
 body, .card, .form-input, header, table, th, td, .nav-link {
   transition: background-color 220ms ease, color 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
 }
@@ -1382,9 +1393,16 @@ input:checked + .slider:before {
 /* Login responsive stability */
 .login-page {
   min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .login-right-panel {
+  min-height: 100%;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -1425,7 +1443,52 @@ input:checked + .slider:before {
   }
 }
 
+@media (min-width: 768px) and (max-height: 900px) {
+  .login-form-wrap {
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+  }
+
+  .login-enterprise-content {
+    padding: 0.95rem;
+    border-radius: 20px;
+  }
+
+  .login-welcome {
+    margin-bottom: 1rem;
+  }
+
+  .login-security-note {
+    padding: 0.65rem 0.75rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .login-role-grid {
+    gap: 0.45rem;
+    margin-bottom: 1rem;
+  }
+
+  .login-role-grid > button {
+    padding: 0.55rem 0.4rem;
+    border-radius: 0.8rem;
+  }
+}
+
 @media (max-height: 760px) {
+  .login-form-wrap {
+    padding-top: 0.9rem;
+    padding-bottom: 0.9rem;
+  }
+
+  .login-enterprise-content {
+    padding: 0.95rem;
+    border-radius: 20px;
+  }
+
+  .login-security-note {
+    display: none;
+  }
+
   .login-page .animate-login-float1,
   .login-page .animate-login-float2,
   .login-page .animate-login-float3,
