@@ -710,7 +710,7 @@ const ProsesAudit = () => {
                               <IconFileAlt className="w-5 h-5 text-indigo-500" />
                             </div>
                             <p className="text-sm font-semibold text-slate-700 mb-1">Tahap ini dikelola di menu Laporan</p>
-                            <p className="text-[11px] text-slate-400 mb-4">Upload Draft LHK dilakukan melalui menu khusus Laporan.</p>
+                            <p className="text-[11px] text-slate-400 mb-4">Upload Draft Laporan Hasil Konsultasi dilakukan melalui menu khusus Laporan.</p>
                             <button
                               type="button"
                               onClick={() => navigate('/laporan')}
