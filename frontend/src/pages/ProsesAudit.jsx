@@ -200,6 +200,19 @@ const ProsesAudit = () => {
     }
   }, [selectedTahap, visibleTahapan]);
 
+  useEffect(() => {
+    const konsultasiId = selectedKonsultasi?.id;
+    if (!konsultasiId) return;
+    if (selectedTahap !== TAHAP_KEPUTUSAN) return;
+    if (uploadedFiles[TAHAP_KEPUTUSAN]) return;
+    if (!acceptedDecisions[konsultasiId]) return;
+
+    setAcceptedDecisions((prev) => ({
+      ...prev,
+      [konsultasiId]: false,
+    }));
+  }, [selectedTahap, selectedKonsultasi, uploadedFiles, acceptedDecisions, TAHAP_KEPUTUSAN]);
+
   // Filter konsultasi berdasarkan role:
   // Auditee: hanya lihat konsultasi milik sendiri (berdasarkan nama)
   // Auditor: lihat semua konsultasi yang dikirim ke biro-nya
