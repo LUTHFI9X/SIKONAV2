@@ -120,11 +120,9 @@ const ProsesAudit = () => {
 
   const isAcceptedFlow = useCallback((konsultasi) => {
     if (!konsultasi) return false;
-    const files = allUploadedFiles[konsultasi.id] || {};
-    const hasPostDecisionDoc = Object.keys(files).some((key) => Number(key) > TAHAP_KEPUTUSAN && !!files[key]);
     const acceptedMarked = !!acceptedDecisions[konsultasi.id];
-    return !isRejectedFlow(konsultasi) && (acceptedMarked || hasPostDecisionDoc);
-  }, [allUploadedFiles, acceptedDecisions, isRejectedFlow, TAHAP_KEPUTUSAN]);
+    return !isRejectedFlow(konsultasi) && acceptedMarked;
+  }, [acceptedDecisions, isRejectedFlow]);
 
   const getTahapState = useCallback((konsultasi, tahapNo, files) => {
     if (tahapNo !== TAHAP_KEPUTUSAN) {
@@ -612,6 +610,7 @@ const ProsesAudit = () => {
                     const isDone = isTahapCompleted(tahapState);
                     const isRejectedTahap = tahapState === 'rejected';
                     const isAcceptedTahap = tahapState === 'accepted';
+                    const isPendingDecisionTahap = tahap.no === TAHAP_KEPUTUSAN && tahapState === 'pending';
                     const isActive = selectedTahap === tahap.no;
                     const isLast = idx === visibleTahapan.length - 1;
                     const canUploadThis = canUploadInProcess(tahap.no);
@@ -635,6 +634,8 @@ const ProsesAudit = () => {
                                   ? 'bg-red-500 border-red-500 text-white hover:shadow-md'
                                   : isDone
                                   ? 'bg-emerald-500 border-emerald-500 text-white hover:shadow-md'
+                                    : isPendingDecisionTahap
+                                      ? 'bg-slate-100 border-slate-300 text-slate-500 hover:bg-slate-100'
                                   : canUploadThis
                                     ? 'bg-white border-slate-300 text-slate-500 hover:border-indigo-400 hover:text-indigo-600'
                                     : 'bg-slate-50 border-slate-200 text-slate-400'
@@ -690,6 +691,7 @@ const ProsesAudit = () => {
               const file = uploadedFiles[selectedTahap];
               const hasFile = !!file;
               const canUploadThis = canUploadInProcess(selectedTahap);
+              const showRejectedFileStyle = selectedTahap === TAHAP_KEPUTUSAN && isRejectedTahap;
               if (!tahap) return null;
               return (
                 <div className="border-t border-slate-100 transition-opacity duration-200">
@@ -757,7 +759,7 @@ const ProsesAudit = () => {
                           )}
                         </div>
 
-                        {selectedTahap === TAHAP_KEPUTUSAN && !isSelectedRejectedFlow && canUploadThis && (
+                        {selectedTahap === TAHAP_KEPUTUSAN && !isSelectedRejectedFlow && !isAcceptedTahap && canUploadThis && (
                           <div className="ml-[56px] mt-3">
                             <button
                               type="button"
@@ -808,10 +810,10 @@ const ProsesAudit = () => {
                             </button>
                           </div>
                         ) : hasFile ? (
-                          <div className="rounded-xl p-4 bg-white border border-emerald-200">
+                          <div className={`rounded-xl p-4 bg-white border ${showRejectedFileStyle ? 'border-red-200' : 'border-emerald-200'}`}>
                             <div className="flex items-center gap-3 mb-3">
-                              <div className="w-11 h-11 bg-emerald-50 rounded-lg border border-emerald-100 flex items-center justify-center flex-shrink-0">
-                                <IconFileAlt className="w-5 h-5 text-emerald-600" />
+                              <div className={`w-11 h-11 rounded-lg border flex items-center justify-center flex-shrink-0 ${showRejectedFileStyle ? 'bg-red-50 border-red-100' : 'bg-emerald-50 border-emerald-100'}`}>
+                                <IconFileAlt className={`w-5 h-5 ${showRejectedFileStyle ? 'text-red-600' : 'text-emerald-600'}`} />
                               </div>
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm font-semibold text-slate-800 truncate" title={file.name}>{file.name}</p>
