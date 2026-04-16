@@ -92,8 +92,8 @@ const Sidebar = ({ mobileOpen = false, onClose }) => {
         ...baseItems,
         { path: '/konsultasi', Icon: IconMessage, label: t('menu.askAuditor', 'Tanya Auditor'), iconHover: 'group-hover:-translate-y-0.5 group-hover:scale-110' },
         { path: '/ajukan', Icon: IconPaperPlane, label: t('menu.submitFollowUp', 'Ajukan Tindak Lanjut'), iconHover: 'group-hover:translate-x-1' },
-        { path: '/status-audit', Icon: IconChartBar, label: t('common.auditStatus', 'Status Audit'), iconHover: 'group-hover:scale-110' },
-        { path: '/proses-audit', Icon: IconListCheck, label: t('common.auditProcess', 'Proses Audit'), iconHover: 'group-hover:-rotate-6 group-hover:scale-110' },
+        { path: '/status-audit', Icon: IconChartBar, label: t('common.auditStatus', 'Status Konsultasi'), iconHover: 'group-hover:scale-110' },
+        { path: '/proses-audit', Icon: IconListCheck, label: t('common.auditProcess', 'Proses Konsultasi'), iconHover: 'group-hover:-rotate-6 group-hover:scale-110' },
         { path: '/profil-spi', Icon: IconBuilding, label: t('common.profileSPI', 'Profil SPI'), iconHover: 'group-hover:-translate-y-0.5' },
       ];
     }
@@ -102,8 +102,8 @@ const Sidebar = ({ mobileOpen = false, onClose }) => {
         ...baseItems,
         { path: '/konsultasi', Icon: IconMessage, label: t('common.consultation', 'Konsultasi'), iconHover: 'group-hover:-translate-y-0.5 group-hover:scale-110' },
         { path: '/auditee-list', Icon: IconUserGroup, label: t('menu.auditeeList', 'Daftar Auditee'), iconHover: 'group-hover:scale-110' },
-        { path: '/status-audit', Icon: IconChartBar, label: t('common.auditStatus', 'Status Audit'), iconHover: 'group-hover:scale-110' },
-        { path: '/proses-audit', Icon: IconListCheck, label: t('common.auditProcess', 'Proses Audit'), iconHover: 'group-hover:-rotate-6 group-hover:scale-110' },
+        { path: '/status-audit', Icon: IconChartBar, label: t('common.auditStatus', 'Status Konsultasi'), iconHover: 'group-hover:scale-110' },
+        { path: '/proses-audit', Icon: IconListCheck, label: t('common.auditProcess', 'Proses Konsultasi'), iconHover: 'group-hover:-rotate-6 group-hover:scale-110' },
         { path: '/laporan', Icon: IconFileAlt, label: t('common.reports', 'Laporan'), iconHover: 'group-hover:scale-110' },
         { path: '/profil-spi', Icon: IconBuilding, label: t('common.profileSPI', 'Profil SPI'), iconHover: 'group-hover:-translate-y-0.5' },
       ];
@@ -127,8 +127,8 @@ const Sidebar = ({ mobileOpen = false, onClose }) => {
       // KSPI: monitoring laporan & audit (tanpa Konsultasi)
       return [
         ...baseItems,
-        { path: '/status-audit', Icon: IconChartBar, label: t('common.auditStatus', 'Status Audit'), iconHover: 'group-hover:scale-110' },
-        { path: '/proses-audit', Icon: IconListCheck, label: t('common.auditProcess', 'Proses Audit'), iconHover: 'group-hover:-rotate-6 group-hover:scale-110' },
+        { path: '/status-audit', Icon: IconChartBar, label: t('common.auditStatus', 'Status Konsultasi'), iconHover: 'group-hover:scale-110' },
+        { path: '/proses-audit', Icon: IconListCheck, label: t('common.auditProcess', 'Proses Konsultasi'), iconHover: 'group-hover:-rotate-6 group-hover:scale-110' },
         { path: '/laporan', Icon: IconFileAlt, label: t('common.reports', 'Laporan'), iconHover: 'group-hover:scale-110' },
         { path: '/profil-spi', Icon: IconBuilding, label: t('common.profileSPI', 'Profil SPI'), iconHover: 'group-hover:-translate-y-0.5' },
       ];

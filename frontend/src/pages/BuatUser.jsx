@@ -6,13 +6,13 @@ import { IconArrowLeft, IconArrowRight, IconCheck, IconCheckCircle, IconUser, Ic
 const ROLES = [
   { value: 'auditor',   label: 'Auditor',   desc: 'Melakukan audit dan konsultasi pada unit kerja',   emoji: '🔍', gradient: 'from-emerald-500 to-teal-600',   ring: 'ring-emerald-400', bg: 'bg-emerald-50' },
   { value: 'auditee',   label: 'Auditee',   desc: 'Unit kerja yang menerima audit dan konsultasi',    emoji: '📋', gradient: 'from-blue-500 to-indigo-600',     ring: 'ring-blue-400',    bg: 'bg-blue-50' },
-  { value: 'manajemen', label: 'Manajemen', desc: 'Pemantauan proses audit (KSPI & Komite)',           emoji: '👔', gradient: 'from-violet-500 to-purple-600',   ring: 'ring-violet-400',  bg: 'bg-violet-50' },
+  { value: 'manajemen', label: 'Manajemen', desc: 'Pemantauan proses konsultasi (KSPI & Komite)',           emoji: '👔', gradient: 'from-violet-500 to-purple-600',   ring: 'ring-violet-400',  bg: 'bg-violet-50' },
   { value: 'admin',     label: 'Admin',     desc: 'Admin — kelola user & pengaturan sistem',           emoji: '⚙️', gradient: 'from-amber-500 to-orange-600',    ring: 'ring-amber-400',   bg: 'bg-amber-50' },
 ];
 
 const SUB_ROLES = {
   manajemen: [
-    { value: 'kspi',         label: 'KSPI',         desc: 'Ketua SPI — memantau seluruh proses audit' },
+    { value: 'kspi',         label: 'KSPI',         desc: 'Ketua SPI — memantau seluruh proses konsultasi' },
     { value: 'komite',       label: 'Komite Audit', desc: 'Komite — pengawasan kinerja audit' },
   ],
 };

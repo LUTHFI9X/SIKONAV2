@@ -189,8 +189,8 @@ const MainLayout = () => {
     const items = [
       { key: 'dashboard', label: t('common.dashboard', 'Dashboard'), path: '/dashboard' },
       { key: 'konsultasi', label: t('common.consultation', 'Konsultasi'), path: '/konsultasi' },
-      { key: 'status-audit', label: t('common.auditStatus', 'Status Audit'), path: '/status-audit' },
-      { key: 'proses-audit', label: t('common.auditProcess', 'Proses Audit'), path: '/proses-audit' },
+      { key: 'status-audit', label: t('common.auditStatus', 'Status Konsultasi'), path: '/status-audit' },
+      { key: 'proses-audit', label: t('common.auditProcess', 'Proses Konsultasi'), path: '/proses-audit' },
       { key: 'laporan', label: t('common.reports', 'Laporan'), path: '/laporan' },
       { key: 'profil-spi', label: t('common.profileSPI', 'Profil SPI'), path: '/profil-spi' },
     ];
@@ -214,7 +214,7 @@ const MainLayout = () => {
     const roleGuide = isId
       ? {
         auditee: 'Fokus utama Anda: unggah dokumen pada tahap 1 dan 6, lalu koordinasi temuan lewat menu Laporan.',
-        auditor: 'Fokus utama Anda: validasi proses audit, review dokumen, dan dorong status hingga siap arsip.',
+        auditor: 'Fokus utama Anda: validasi proses konsultasi, review dokumen, dan dorong status hingga siap arsip.',
         admin: 'Fokus utama Anda: monitor aktivitas sistem, kelola user, dan jaga konfigurasi tetap konsisten.',
         manajemen: 'Fokus utama Anda: pantau ringkasan, tindak lanjut prioritas, serta kualitas penyelesaian audit.',
         default: 'Fokus utama Anda: gunakan sidebar sebagai pusat navigasi dan notifikasi sebagai daftar tugas harian.',
@@ -237,7 +237,7 @@ const MainLayout = () => {
         highlights: isId
           ? ['Shortcut universal: Cmd/Ctrl + K', 'Pencarian cepat menu dan halaman', 'Aman dipakai dari layar mana pun']
           : ['Universal shortcut: Cmd/Ctrl + K', 'Fast menu and page search', 'Works safely from any screen'],
-        tip: isId ? 'Mulai dengan mengetik: dashboard, laporan, atau proses audit.' : 'Start by typing: dashboard, reports, or audit process.',
+        tip: isId ? 'Mulai dengan mengetik: dashboard, laporan, atau proses konsultasi.' : 'Start by typing: dashboard, reports, or consultation process.',
       },
       {
         eyebrow: isId ? 'Kontrol Tampilan' : 'Display Control',
@@ -254,11 +254,11 @@ const MainLayout = () => {
         eyebrow: isId ? 'Alur Operasional' : 'Operational Flow',
         title: isId ? 'Pahami Urutan Kerja Harian' : 'Understand the Daily Work Sequence',
         body: isId
-          ? 'Alur paling efisien: cek notifikasi, buka Proses Audit untuk status tahap, lalu tindak lanjuti detail dokumen lewat menu Laporan.'
-          : 'Most efficient sequence: check notifications, open Audit Process for stage status, then handle document details in Reports.',
+          ? 'Alur paling efisien: cek notifikasi, buka Proses Konsultasi untuk status tahap, lalu tindak lanjuti detail dokumen lewat menu Laporan.'
+          : 'Most efficient sequence: check notifications, open Consultation Process for stage status, then handle document details in Reports.',
         highlights: isId
-          ? ['Notifikasi sebagai prioritas tugas', 'Proses Audit untuk tracking tahapan', 'Laporan untuk review, replace, delete, arsip']
-          : ['Notifications as task priority', 'Audit Process for stage tracking', 'Reports for review, replace, delete, archive'],
+          ? ['Notifikasi sebagai prioritas tugas', 'Proses Konsultasi untuk tracking tahapan', 'Laporan untuk review, replace, delete, arsip']
+          : ['Notifications as task priority', 'Consultation Process for stage tracking', 'Reports for review, replace, delete, archive'],
         tip: isId ? 'Gunakan filter/status untuk fokus ke item yang paling urgent.' : 'Use filters/status to focus on the most urgent items.',
       },
       {
@@ -301,8 +301,8 @@ const MainLayout = () => {
       '/dashboard': t('common.dashboard', 'Dashboard'),
       '/konsultasi': t('common.consultation', 'Konsultasi'),
       '/ajukan': t('menu.submitFollowUp', 'Ajukan Tindak Lanjut'),
-      '/status-audit': t('common.auditStatus', 'Status Audit'),
-      '/proses-audit': t('common.auditProcess', 'Proses Audit'),
+      '/status-audit': t('common.auditStatus', 'Status Konsultasi'),
+      '/proses-audit': t('common.auditProcess', 'Proses Konsultasi'),
       '/profil-spi': t('common.profileSPI', 'Profil SPI'),
       '/kelola-user': t('menu.userManagement', 'Kelola User'),
       '/buat-user': t('menu.createUser', 'Buat User Baru'),

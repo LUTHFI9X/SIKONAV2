@@ -122,7 +122,7 @@ const StatusAudit = () => {
       const shouldUseConversationFallback = mappedFromAuditProcess.length === 0;
       setAudits(shouldUseConversationFallback ? mappedFromConversations : mappedFromAuditProcess);
     } catch (error) {
-      console.error('Failed to fetch status audit:', error);
+      console.error('Failed to fetch status konsultasi:', error);
     } finally {
       setLoading(false);
     }
@@ -176,7 +176,7 @@ const StatusAudit = () => {
       const processId = response.data?.conversation?.audit_process?.id;
       return processId || null;
     } catch (error) {
-      console.error('Gagal resolve audit process dari conversation:', error);
+      console.error('Gagal resolve consultation process dari conversation:', error);
       return null;
     }
   };
@@ -207,12 +207,12 @@ const StatusAudit = () => {
       }
       await fetchAudits();
     } catch (error) {
-      console.error('Failed to update audit status:', error);
-      alert('Gagal memperbarui status audit.');
+      console.error('Failed to update consultation status:', error);
+      alert('Gagal memperbarui status konsultasi.');
     }
   };
 
-  // Check if the current user can change audit status
+  // Check if the current user can change consultation status
   const isKSPI = userRole === 'manajemen' && currentUser?.sub_role === 'kspi';
   const canChangeStatus = (audit) => {
     void audit;
@@ -276,7 +276,7 @@ const StatusAudit = () => {
     if (pesanText.trim()) {
       try {
         if (!auditId) {
-          alert('Audit process belum tersedia untuk catatan ini.');
+          alert('Proses Konsultasi Audit belum tersedia untuk catatan ini.');
           return;
         }
         await auditAPI.addNote(auditId, 'pesan_spi', pesanText.trim());
@@ -306,7 +306,7 @@ const StatusAudit = () => {
     if (tindakLanjutText.trim()) {
       try {
         if (!auditId) {
-          alert('Audit process belum tersedia untuk catatan ini.');
+          alert('Proses Konsultasi Audit belum tersedia untuk catatan ini.');
           return;
         }
         await auditAPI.addNote(auditId, 'tindak_lanjut', tindakLanjutText.trim());
@@ -412,8 +412,8 @@ const StatusAudit = () => {
               </div>
               <span className="text-indigo-300 text-[10px] font-medium uppercase tracking-wider">Monitoring</span>
             </div>
-            <h1 className="text-xl font-bold tracking-tight">Status Audit</h1>
-            <p className="text-indigo-200/50 text-[11px] mt-0.5">Pantau status seluruh proses audit konsultasi</p>
+            <h1 className="text-xl font-bold tracking-tight">Status Konsultasi</h1>
+            <p className="text-indigo-200/50 text-[11px] mt-0.5">Pantau status seluruh proses konsultasi</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="text-center px-3.5 py-1.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
@@ -507,7 +507,7 @@ const StatusAudit = () => {
             </div>
             <div>
               <h3 className="font-bold text-slate-800 text-lg">Monitoring Tindak Lanjut</h3>
-              <p className="text-sm text-slate-500">Pantau status seluruh proses audit</p>
+              <p className="text-sm text-slate-500">Pantau status seluruh proses konsultasi</p>
             </div>
           </div>
         </div>
@@ -530,7 +530,7 @@ const StatusAudit = () => {
               <th className="p-4 whitespace-nowrap">Subject dan Ringkasan</th>
               <th className="p-4 whitespace-nowrap">Auditor</th>
               <th className="p-4 whitespace-nowrap">Update</th>
-              <th className="p-4 whitespace-nowrap">Status Audit</th>
+              <th className="p-4 whitespace-nowrap">Status Konsultasi</th>
               <th className="p-4 text-right whitespace-nowrap">Tindakan</th>
             </tr>
           </thead>

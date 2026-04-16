@@ -7,8 +7,8 @@ const DICTIONARY = {
     common: {
       dashboard: 'Dashboard',
       consultation: 'Konsultasi',
-      auditStatus: 'Status Audit',
-      auditProcess: 'Proses Audit',
+      auditStatus: 'Status Konsultasi',
+      auditProcess: 'Proses Konsultasi',
       reports: 'Laporan',
       profileSPI: 'Profil SPI',
       profileSettings: 'Pengaturan Profil',
@@ -63,8 +63,8 @@ const DICTIONARY = {
     common: {
       dashboard: 'Dashboard',
       consultation: 'Consultation',
-      auditStatus: 'Audit Status',
-      auditProcess: 'Audit Process',
+      auditStatus: 'Consultation Status',
+      auditProcess: 'Consultation Process',
       reports: 'Reports',
       profileSPI: 'SPI Profile',
       profileSettings: 'Profile Settings',

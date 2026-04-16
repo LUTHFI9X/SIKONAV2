@@ -272,7 +272,7 @@ const AuditeeList = () => {
                 <th className="p-4">Tujuan Konsultasi</th>
                 <th className="p-4">Konsultasi Dikirim</th>
                 <th className="p-4">Terakhir Kirim</th>
-                <th className="p-4">Status Audit</th>
+                <th className="p-4">Status Konsultasi</th>
                 <th className="p-4 text-right">Tindakan</th>
               </tr>
             </thead>

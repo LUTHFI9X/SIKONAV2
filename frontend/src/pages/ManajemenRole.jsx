@@ -11,8 +11,8 @@ import {
 const MODULES = [
   { id: 'dashboard', name: 'Dashboard', description: 'Lihat dashboard & statistik' },
   { id: 'konsultasi', name: 'Konsultasi', description: 'Kirim & baca pesan konsultasi' },
-  { id: 'status_audit', name: 'Status Audit', description: 'Lihat & ubah status audit' },
-  { id: 'proses_audit', name: 'Proses Audit', description: 'Upload & kelola dokumen tahapan' },
+  { id: 'status_audit', name: 'Status Konsultasi', description: 'Lihat & ubah status konsultasi' },
+  { id: 'proses_audit', name: 'Proses Konsultasi', description: 'Upload & kelola dokumen tahapan' },
   { id: 'profil_spi', name: 'Profil SPI', description: 'Lihat profil SPI' },
   { id: 'kelola_user', name: 'Kelola User', description: 'CRUD akun pengguna' },
   { id: 'pengaturan', name: 'Pengaturan Sistem', description: 'Konfigurasi aplikasi' },

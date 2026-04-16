@@ -473,7 +473,7 @@ const AuditorDashboard = ({ user }) => {
             </Link>
             <Link to="/proses-audit" className="bg-white rounded-xl p-4 shadow-sm border border-slate-200/60 hover:border-indigo-200 hover:shadow-md transition-all text-center group">
               <IconClipboardList className="w-6 h-6 text-purple-500 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <p className="text-xs font-bold text-slate-700">Proses Audit</p>
+              <p className="text-xs font-bold text-slate-700">Proses Konsultasi</p>
             </Link>
           </div>
         </div>
@@ -677,7 +677,7 @@ const ManajemenDashboard = ({ user, subRole }) => {
                 <SkeletonCard />
               </div>
             ) : biroPerfData.length === 0 ? (
-              <p className="text-sm text-slate-500">Belum ada data proses audit dari biro.</p>
+              <p className="text-sm text-slate-500">Belum ada data proses konsultasi dari biro.</p>
             ) : biroPerfData.map((biro, idx) => (
               <div key={idx} className="p-4 rounded-xl bg-slate-50 border border-slate-100">
                 <div className="flex items-center justify-between mb-3">
@@ -709,7 +709,7 @@ const ManajemenDashboard = ({ user, subRole }) => {
                 </Link>
                 <Link to="/status-audit" className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors group">
                   <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center"><IconClipboardList className="w-4 h-4 text-emerald-600" /></div>
-                  <span className="text-sm text-slate-700 font-medium group-hover:text-emerald-600 transition-colors">Status Audit</span>
+                  <span className="text-sm text-slate-700 font-medium group-hover:text-emerald-600 transition-colors">Status Konsultasi</span>
                 </Link>
                 {subRole === 'admin' && (
                   <Link to="/kelola-user" className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors group">

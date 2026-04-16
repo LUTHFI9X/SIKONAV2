@@ -78,7 +78,7 @@ const ProsesAudit = () => {
         return refreshed;
       });
     } catch (error) {
-      console.error('Failed to fetch audit processes:', error);
+      console.error('Failed to fetch consultation processes:', error);
     }
   }, []);
 
@@ -419,7 +419,7 @@ const ProsesAudit = () => {
               <IconFolderOpen className="w-7 h-7 text-indigo-400" />
             </div>
             <h3 className="font-bold text-slate-800 mb-1">Belum Ada Konsultasi</h3>
-            <p className="text-sm text-slate-500">Proses Audit hanya menampilkan data dengan status Dalam Proses. Ubah status dari menu Status Audit terlebih dahulu.</p>
+            <p className="text-sm text-slate-500">Proses Konsultasi hanya menampilkan data dengan status Dalam Proses. Ubah status dari menu Status Konsultasi terlebih dahulu.</p>
           </div>
         )}
       </div>
@@ -630,7 +630,7 @@ const ProsesAudit = () => {
                               <IconLock className="w-5 h-5 text-slate-300" />
                             </div>
                             <p className="text-sm font-semibold text-slate-500 mb-1">Finalisasi Otomatis</p>
-                            <p className="text-[11px] text-slate-400">Tahap 10 terisi otomatis saat status audit diarsipkan.</p>
+                            <p className="text-[11px] text-slate-400">Tahap 10 terisi otomatis saat status konsultasi diarsipkan.</p>
                           </div>
                         ) : selectedTahap === 9 && !isDone ? (
                           <div className="rounded-xl border border-indigo-200 bg-white p-6 text-center">
