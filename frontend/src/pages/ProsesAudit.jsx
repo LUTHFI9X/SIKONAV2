@@ -103,6 +103,7 @@ const ProsesAudit = () => {
   const [catatanAuditor, setCatatanAuditor] = useState({});
 
   const fileInputRefs = useRef({});
+  const [acceptedDecisions, setAcceptedDecisions] = useState({});
   const [displayTahapan, setDisplayTahapan] = useState(TAHAPAN_AUDIT);
   const [isStepperFading, setIsStepperFading] = useState(false);
 
@@ -117,6 +118,27 @@ const ProsesAudit = () => {
     return TAHAPAN_AUDIT.filter((t) => t.no <= TAHAP_KEPUTUSAN);
   }, [isRejectedFlow, TAHAP_KEPUTUSAN]);
 
+  const isAcceptedFlow = useCallback((konsultasi) => {
+    if (!konsultasi) return false;
+    const files = allUploadedFiles[konsultasi.id] || {};
+    const hasPostDecisionDoc = Object.keys(files).some((key) => Number(key) > TAHAP_KEPUTUSAN && !!files[key]);
+    const acceptedMarked = !!acceptedDecisions[konsultasi.id];
+    return !isRejectedFlow(konsultasi) && (acceptedMarked || hasPostDecisionDoc);
+  }, [allUploadedFiles, acceptedDecisions, isRejectedFlow, TAHAP_KEPUTUSAN]);
+
+  const getTahapState = useCallback((konsultasi, tahapNo, files) => {
+    if (tahapNo !== TAHAP_KEPUTUSAN) {
+      return files[tahapNo] ? 'done' : 'pending';
+    }
+
+    if (isRejectedFlow(konsultasi)) return 'rejected';
+    if (isAcceptedFlow(konsultasi)) return 'accepted';
+
+    return files[tahapNo] ? 'done' : 'pending';
+  }, [TAHAP_KEPUTUSAN, isRejectedFlow, isAcceptedFlow]);
+
+  const isTahapCompleted = (state) => state !== 'pending';
+
   // Calculate progress for a specific konsultasi based on branch visibility
   const getProgress = (konsultasiId) => {
     const konsultasi = konsultasiData.find((k) => k.id === konsultasiId);
@@ -124,7 +146,10 @@ const ProsesAudit = () => {
 
     const files = allUploadedFiles[konsultasiId] || {};
     const visibleTahapanForRow = getVisibleTahapan(konsultasi);
-    const completed = visibleTahapanForRow.reduce((acc, tahap) => (files[tahap.no] ? acc + 1 : acc), 0);
+    const completed = visibleTahapanForRow.reduce((acc, tahap) => {
+      const tahapState = getTahapState(konsultasi, tahap.no, files);
+      return acc + (isTahapCompleted(tahapState) ? 1 : 0);
+    }, 0);
     const totalTahapan = Math.max(visibleTahapanForRow.length, 1);
 
     return Math.round((completed / totalTahapan) * 100);
@@ -159,7 +184,10 @@ const ProsesAudit = () => {
   const visibleTahapan = displayTahapan;
 
   const maxVisibleTahap = visibleTahapan[visibleTahapan.length - 1]?.no || TOTAL_TAHAP;
-  const completedCount = visibleTahapan.reduce((acc, tahap) => (uploadedFiles[tahap.no] ? acc + 1 : acc), 0);
+  const completedCount = visibleTahapan.reduce((acc, tahap) => {
+    const tahapState = getTahapState(selectedKonsultasi, tahap.no, uploadedFiles);
+    return acc + (isTahapCompleted(tahapState) ? 1 : 0);
+  }, 0);
   const pendingCount = Math.max(visibleTahapan.length - completedCount, 0);
   const progressPercent = selectedKonsultasi ? getProgress(selectedKonsultasi.id) : 0;
   const isSelectedRejectedFlow = selectedKonsultasi ? isRejectedFlow(selectedKonsultasi) : false;
@@ -580,11 +608,17 @@ const ProsesAudit = () => {
                 )}
                 <div className={`flex items-start ${isCompactDecisionFlow ? 'justify-center gap-6 md:gap-10 max-w-md mx-auto' : ''}`}>
                   {visibleTahapan.map((tahap, idx) => {
-                    const isDone = !!uploadedFiles[tahap.no];
+                    const tahapState = getTahapState(selectedKonsultasi, tahap.no, uploadedFiles);
+                    const isDone = isTahapCompleted(tahapState);
+                    const isRejectedTahap = tahapState === 'rejected';
+                    const isAcceptedTahap = tahapState === 'accepted';
                     const isActive = selectedTahap === tahap.no;
                     const isLast = idx === visibleTahapan.length - 1;
                     const canUploadThis = canUploadInProcess(tahap.no);
-                    const nextDone = !isLast && !!uploadedFiles[visibleTahapan[idx + 1]?.no];
+                    const nextTahap = !isLast ? visibleTahapan[idx + 1] : null;
+                    const nextState = nextTahap ? getTahapState(selectedKonsultasi, nextTahap.no, uploadedFiles) : 'pending';
+                    const nextDone = nextTahap ? isTahapCompleted(nextState) : false;
+                    const hasRejectedPath = isRejectedTahap || nextState === 'rejected';
                     return (
                       <div key={tahap.no} className={`flex items-start ${isCompactDecisionFlow ? '' : 'flex-1 last:flex-none'}`}>
                         <div className="flex flex-col items-center">
@@ -592,8 +626,14 @@ const ProsesAudit = () => {
                             onClick={() => setSelectedTahap(isActive ? null : tahap.no)}
                             className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold border-2 flex-shrink-0 transition-all duration-200 cursor-pointer relative ${
                               isActive
-                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-md ring-4 ring-indigo-100 scale-110'
-                                : isDone
+                                ? isRejectedTahap
+                                  ? 'bg-red-500 border-red-500 text-white shadow-md ring-4 ring-red-100 scale-110'
+                                  : isAcceptedTahap
+                                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-md ring-4 ring-emerald-100 scale-110'
+                                    : 'bg-indigo-600 border-indigo-600 text-white shadow-md ring-4 ring-indigo-100 scale-110'
+                                : isRejectedTahap
+                                  ? 'bg-red-500 border-red-500 text-white hover:shadow-md'
+                                  : isDone
                                   ? 'bg-emerald-500 border-emerald-500 text-white hover:shadow-md'
                                   : canUploadThis
                                     ? 'bg-white border-slate-300 text-slate-500 hover:border-indigo-400 hover:text-indigo-600'
@@ -609,14 +649,28 @@ const ProsesAudit = () => {
                             )}
                           </button>
                           <p className={`text-[9px] font-medium mt-1.5 text-center leading-tight w-14 truncate ${
-                            isActive ? 'text-indigo-600 font-bold' : isDone ? 'text-emerald-600' : 'text-slate-400'
+                              isActive
+                                ? isRejectedTahap
+                                  ? 'text-red-600 font-bold'
+                                  : isAcceptedTahap
+                                    ? 'text-emerald-600 font-bold'
+                                    : 'text-indigo-600 font-bold'
+                                : isRejectedTahap
+                                  ? 'text-red-600'
+                                  : isDone
+                                    ? 'text-emerald-600'
+                                    : 'text-slate-400'
                           }`} title={tahap.tahapan}>
                             {tahap.tahapan.length > 12 ? tahap.tahapan.substring(0, 11) + '…' : tahap.tahapan}
                           </p>
                         </div>
                         {!isLast && (
                           <div className={`${isCompactDecisionFlow ? 'w-20 md:w-28' : 'flex-1'} h-0.5 mx-1 mt-[19px] rounded-full transition-all duration-300 ${
-                            isDone && nextDone ? 'bg-emerald-400' : isDone ? 'bg-emerald-200' : 'bg-slate-200'
+                              isDone && nextDone
+                                ? (hasRejectedPath ? 'bg-red-400' : 'bg-emerald-400')
+                                : isDone
+                                  ? (isRejectedTahap ? 'bg-red-200' : 'bg-emerald-200')
+                                  : 'bg-slate-200'
                           }`}></div>
                         )}
                       </div>
@@ -629,8 +683,12 @@ const ProsesAudit = () => {
             {/* Detail Panel — clean, consistent indigo/emerald/slate */}
             {selectedTahap && (() => {
               const tahap = visibleTahapan.find(t => t.no === selectedTahap);
-              const isDone = !!uploadedFiles[selectedTahap];
+              const tahapState = getTahapState(selectedKonsultasi, selectedTahap, uploadedFiles);
+              const isDone = isTahapCompleted(tahapState);
+              const isRejectedTahap = tahapState === 'rejected';
+              const isAcceptedTahap = tahapState === 'accepted';
               const file = uploadedFiles[selectedTahap];
+              const hasFile = !!file;
               const canUploadThis = canUploadInProcess(selectedTahap);
               if (!tahap) return null;
               return (
@@ -640,7 +698,7 @@ const ProsesAudit = () => {
                       {/* Left: Tahap Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-4">
-                          <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm ${isDone ? 'bg-emerald-500' : 'bg-indigo-600'}`}>
+                          <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm ${isRejectedTahap ? 'bg-red-500' : isDone ? 'bg-emerald-500' : 'bg-indigo-600'}`}>
                             {isDone ? <IconCheck className="w-5 h-5" /> : selectedTahap}
                           </div>
                           <div className="min-w-0">
@@ -654,7 +712,15 @@ const ProsesAudit = () => {
                             <span className="text-xs text-slate-500">Dokumen: <span className="font-semibold text-slate-700">{tahap.dokumen}</span></span>
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            {isDone ? (
+                            {isRejectedTahap ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
+                                <IconCheckCircle className="w-3 h-3" /> Ditolak
+                              </span>
+                            ) : isAcceptedTahap ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
+                                <IconCheckCircle className="w-3 h-3" /> Diterima
+                              </span>
+                            ) : isDone ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
                                 <IconCheckCircle className="w-3 h-3" /> Selesai
                               </span>
@@ -680,20 +746,27 @@ const ProsesAudit = () => {
                           >
                             <IconArrowLeft className="w-3 h-3" /> Sebelumnya
                           </button>
-                          <button
-                            onClick={() => setSelectedTahap(prev => Math.min(maxVisibleTahap, prev + 1))}
-                            disabled={selectedTahap === maxVisibleTahap}
-                            className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
-                          >
-                            Selanjutnya <IconArrowLeft className="w-3 h-3 rotate-180" />
-                          </button>
+                          {selectedTahap !== TAHAP_KEPUTUSAN && (
+                            <button
+                              onClick={() => setSelectedTahap(prev => Math.min(maxVisibleTahap, prev + 1))}
+                              disabled={selectedTahap === maxVisibleTahap}
+                              className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
+                            >
+                              Selanjutnya <IconArrowLeft className="w-3 h-3 rotate-180" />
+                            </button>
+                          )}
                         </div>
 
-                        {selectedTahap === TAHAP_KEPUTUSAN && !isDone && !isSelectedRejectedFlow && canUploadThis && (
+                        {selectedTahap === TAHAP_KEPUTUSAN && !isSelectedRejectedFlow && canUploadThis && (
                           <div className="ml-[56px] mt-3">
                             <button
                               type="button"
-                              onClick={() => setSelectedTahap(3)}
+                              onClick={() => {
+                                if (selectedKonsultasi?.id) {
+                                  setAcceptedDecisions(prev => ({ ...prev, [selectedKonsultasi.id]: true }));
+                                }
+                                setSelectedTahap(3);
+                              }}
                               className="px-3.5 py-2 rounded-lg bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600 transition-all"
                             >
                               Konsultasi Diterima, Lanjut Membuat Surat Tugas
@@ -704,7 +777,7 @@ const ProsesAudit = () => {
 
                       {/* Right: Upload / File / Locked */}
                       <div className="w-full md:w-80 flex-shrink-0">
-                        {selectedTahap === TAHAP_DRAFT_LHK && !isDone ? (
+                        {selectedTahap === TAHAP_DRAFT_LHK && !hasFile ? (
                           <div className="rounded-xl border border-indigo-200 bg-white p-6 text-center">
                             <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center mx-auto mb-3">
                               <IconFileAlt className="w-5 h-5 text-indigo-500" />
@@ -719,7 +792,22 @@ const ProsesAudit = () => {
                               Buka Menu Laporan
                             </button>
                           </div>
-                        ) : isDone ? (
+                        ) : selectedTahap === TAHAP_KEPUTUSAN && isAcceptedTahap && !hasFile ? (
+                          <div className="rounded-xl border border-emerald-200 bg-white p-6 text-center">
+                            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+                              <IconCheckCircle className="w-5 h-5 text-emerald-500" />
+                            </div>
+                            <p className="text-sm font-semibold text-slate-700 mb-1">Konsultasi Diterima</p>
+                            <p className="text-[11px] text-slate-400 mb-4">Tahap 2 ditandai diterima. Lanjutkan ke Tahap 3 untuk pembuatan Surat Tugas.</p>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedTahap(3)}
+                              className="px-3.5 py-2 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600 transition-all"
+                            >
+                              Lanjut ke Tahap 3
+                            </button>
+                          </div>
+                        ) : hasFile ? (
                           <div className="rounded-xl p-4 bg-white border border-emerald-200">
                             <div className="flex items-center gap-3 mb-3">
                               <div className="w-11 h-11 bg-emerald-50 rounded-lg border border-emerald-100 flex items-center justify-center flex-shrink-0">
