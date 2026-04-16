@@ -103,8 +103,6 @@ const ProsesAudit = () => {
   const [catatanAuditor, setCatatanAuditor] = useState({});
 
   const fileInputRefs = useRef({});
-  const [displayTahapan, setDisplayTahapan] = useState(TAHAPAN_AUDIT);
-  const [isStepperFading, setIsStepperFading] = useState(false);
 
   const isRejectedFlow = useCallback((konsultasi) => {
     if (!konsultasi) return false;
@@ -132,31 +130,10 @@ const ProsesAudit = () => {
 
   // Get uploaded files and active visible stages for selected konsultasi
   const uploadedFiles = selectedKonsultasi ? (allUploadedFiles[selectedKonsultasi.id] || {}) : {};
-  const targetVisibleTahapan = useMemo(() => {
+  const visibleTahapan = useMemo(() => {
     if (!selectedKonsultasi) return TAHAPAN_AUDIT;
     return getVisibleTahapan(selectedKonsultasi);
   }, [selectedKonsultasi, getVisibleTahapan]);
-
-  const targetTahapanKey = useMemo(() => targetVisibleTahapan.map((t) => t.no).join('-'), [targetVisibleTahapan]);
-  const displayTahapanKey = useMemo(() => displayTahapan.map((t) => t.no).join('-'), [displayTahapan]);
-
-  useEffect(() => {
-    if (targetTahapanKey === displayTahapanKey) return;
-
-    setIsStepperFading(true);
-    const switchTimer = setTimeout(() => {
-      setDisplayTahapan(targetVisibleTahapan);
-      setSelectedTahap((prev) => {
-        if (targetVisibleTahapan.some((t) => t.no === prev)) return prev;
-        return targetVisibleTahapan[0]?.no || null;
-      });
-      setIsStepperFading(false);
-    }, 140);
-
-    return () => clearTimeout(switchTimer);
-  }, [targetTahapanKey, displayTahapanKey, targetVisibleTahapan]);
-
-  const visibleTahapan = displayTahapan;
 
   const maxVisibleTahap = visibleTahapan[visibleTahapan.length - 1]?.no || TOTAL_TAHAP;
   const completedCount = visibleTahapan.reduce((acc, tahap) => (uploadedFiles[tahap.no] ? acc + 1 : acc), 0);
@@ -164,7 +141,7 @@ const ProsesAudit = () => {
   const progressPercent = selectedKonsultasi ? getProgress(selectedKonsultasi.id) : 0;
   const isSelectedRejectedFlow = selectedKonsultasi ? isRejectedFlow(selectedKonsultasi) : false;
   const isCompactDecisionFlow = visibleTahapan.length <= 2;
-  const isRenderedRejectedFlow = visibleTahapan.length <= TAHAP_KEPUTUSAN;
+  const isRenderedRejectedFlow = isSelectedRejectedFlow;
 
   useEffect(() => {
     if (!selectedTahap) return;
@@ -559,70 +536,82 @@ const ProsesAudit = () => {
               </div>
             </div>
 
-            <div className={`transition-all duration-200 ease-out ${isStepperFading ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}>
-              {/* Progress Bar — single-color, clean */}
-              <div className="px-6 pt-5">
-                <div className={`h-1 bg-slate-100 rounded-full overflow-hidden transition-all duration-300 ${isCompactDecisionFlow ? 'max-w-sm mx-auto' : 'w-full'}`}>
-                  <div className={`h-full rounded-full transition-all duration-700 ${progressPercent === 100 ? 'bg-emerald-500' : 'bg-indigo-500'}`} style={{ width: `${progressPercent}%` }}></div>
-                </div>
+            {/* Progress Bar — single-color, clean */}
+            <div className="px-6 pt-5">
+              <div className={`h-1 bg-slate-100 rounded-full overflow-hidden transition-all duration-500 ease-in-out ${isCompactDecisionFlow ? 'max-w-sm mx-auto' : 'w-full'}`}>
+                <div className={`h-full rounded-full transition-all duration-700 ${progressPercent === 100 ? 'bg-emerald-500' : 'bg-indigo-500'}`} style={{ width: `${progressPercent}%` }}></div>
               </div>
+            </div>
 
-              {/* Horizontal Stepper — semantic colors only */}
-              <div className="px-4 md:px-6 py-6">
-                {isRenderedRejectedFlow ? (
-                  <p className="text-[11px] text-red-700 mb-4 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                    Konsultasi ditolak: hanya Tahap 1-2 yang ditampilkan karena dokumen keputusan (Nota Dinas/NDE) pada Tahap 2 sudah terunggah.
-                  </p>
-                ) : (
-                  <p className="text-[11px] text-amber-700 mb-4 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                    Alur keputusan: jika Tahap 2 ditolak dan dokumen Nota Dinas/NDE diunggah, sistem hanya menampilkan Tahap 1-2. Jika Tahap 2 masih kosong, alur lanjut ke Tahap 3-13.
-                  </p>
-                )}
-                <div className={`flex items-start ${isCompactDecisionFlow ? 'justify-center gap-6 md:gap-10 max-w-md mx-auto' : ''}`}>
-                  {visibleTahapan.map((tahap, idx) => {
-                    const isDone = !!uploadedFiles[tahap.no];
-                    const isActive = selectedTahap === tahap.no;
-                    const isLast = idx === visibleTahapan.length - 1;
-                    const canUploadThis = canUploadInProcess(tahap.no);
-                    const nextDone = !isLast && !!uploadedFiles[visibleTahapan[idx + 1]?.no];
-                    return (
-                      <div key={tahap.no} className={`flex items-start ${isCompactDecisionFlow ? '' : 'flex-1 last:flex-none'}`}>
-                        <div className="flex flex-col items-center">
-                          <button
-                            onClick={() => setSelectedTahap(isActive ? null : tahap.no)}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold border-2 flex-shrink-0 transition-all duration-200 cursor-pointer relative ${
-                              isActive
-                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-md ring-4 ring-indigo-100 scale-110'
-                                : isDone
-                                  ? 'bg-emerald-500 border-emerald-500 text-white hover:shadow-md'
-                                  : canUploadThis
-                                    ? 'bg-white border-slate-300 text-slate-500 hover:border-indigo-400 hover:text-indigo-600'
-                                    : 'bg-slate-50 border-slate-200 text-slate-400'
-                            }`}
-                            title={tahap.tahapan}
-                          >
-                            {isDone && !isActive ? <IconCheck className="w-4 h-4" /> : tahap.no}
-                            {!canUploadThis && !isDone && (
-                              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-slate-200 rounded-full flex items-center justify-center border-2 border-white">
-                                <IconLock className="w-2 h-2 text-slate-400" />
-                              </div>
-                            )}
-                          </button>
-                          <p className={`text-[9px] font-medium mt-1.5 text-center leading-tight w-14 truncate ${
-                            isActive ? 'text-indigo-600 font-bold' : isDone ? 'text-emerald-600' : 'text-slate-400'
-                          }`} title={tahap.tahapan}>
-                            {tahap.tahapan.length > 12 ? tahap.tahapan.substring(0, 11) + '…' : tahap.tahapan}
-                          </p>
-                        </div>
-                        {!isLast && (
-                          <div className={`${isCompactDecisionFlow ? 'w-20 md:w-28' : 'flex-1'} h-0.5 mx-1 mt-[19px] rounded-full transition-all duration-300 ${
-                            isDone && nextDone ? 'bg-emerald-400' : isDone ? 'bg-emerald-200' : 'bg-slate-200'
-                          }`}></div>
-                        )}
+            {/* Horizontal Stepper — semantic colors only */}
+            <div className="px-4 md:px-6 py-6">
+              {isRenderedRejectedFlow ? (
+                <p className="text-[11px] text-red-700 mb-4 bg-red-50 border border-red-200 rounded-lg px-3 py-2 transition-all duration-300">
+                  Konsultasi ditolak: hanya Tahap 1-2 yang ditampilkan karena dokumen keputusan (Nota Dinas/NDE) pada Tahap 2 sudah terunggah.
+                </p>
+              ) : (
+                <p className="text-[11px] text-amber-700 mb-4 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 transition-all duration-300">
+                  Alur keputusan: jika Tahap 2 ditolak dan dokumen Nota Dinas/NDE diunggah, sistem hanya menampilkan Tahap 1-2. Jika Tahap 2 masih kosong, alur lanjut ke Tahap 3-13.
+                </p>
+              )}
+              <div className={`flex items-start transition-all duration-500 ease-in-out ${isCompactDecisionFlow ? 'justify-center gap-6 md:gap-10 max-w-md mx-auto' : ''}`}>
+                {TAHAPAN_AUDIT.map((tahap, idx) => {
+                  const isInFlow = tahap.no <= maxVisibleTahap;
+                  const isDone = !!uploadedFiles[tahap.no];
+                  const isActive = selectedTahap === tahap.no;
+                  const canUploadThis = canUploadInProcess(tahap.no);
+                  const nextTahap = TAHAPAN_AUDIT[idx + 1];
+                  const hasNext = !!nextTahap;
+                  const nextInFlow = hasNext && nextTahap.no <= maxVisibleTahap;
+                  const nextDone = nextInFlow && !!uploadedFiles[nextTahap.no];
+                  const hideConnector = !hasNext || !isInFlow || !nextInFlow;
+
+                  return (
+                    <div
+                      key={tahap.no}
+                      className={`flex items-start overflow-hidden transition-all duration-500 ease-in-out ${
+                        isInFlow
+                          ? (isCompactDecisionFlow ? 'flex-none opacity-100 scale-100 max-w-[180px]' : 'flex-1 last:flex-none opacity-100 scale-100 max-w-[480px]')
+                          : 'max-w-0 opacity-0 scale-95 pointer-events-none'
+                      }`}
+                    >
+                      <div className="flex flex-col items-center">
+                        <button
+                          onClick={() => setSelectedTahap(isActive ? null : tahap.no)}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold border-2 flex-shrink-0 transition-all duration-200 cursor-pointer relative ${
+                            isActive
+                              ? 'bg-indigo-600 border-indigo-600 text-white shadow-md ring-4 ring-indigo-100 scale-110'
+                              : isDone
+                                ? 'bg-emerald-500 border-emerald-500 text-white hover:shadow-md'
+                                : canUploadThis
+                                  ? 'bg-white border-slate-300 text-slate-500 hover:border-indigo-400 hover:text-indigo-600'
+                                  : 'bg-slate-50 border-slate-200 text-slate-400'
+                          }`}
+                          title={tahap.tahapan}
+                        >
+                          {isDone && !isActive ? <IconCheck className="w-4 h-4" /> : tahap.no}
+                          {!canUploadThis && !isDone && (
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-slate-200 rounded-full flex items-center justify-center border-2 border-white">
+                              <IconLock className="w-2 h-2 text-slate-400" />
+                            </div>
+                          )}
+                        </button>
+                        <p className={`text-[9px] font-medium mt-1.5 text-center leading-tight w-14 truncate transition-colors duration-200 ${
+                          isActive ? 'text-indigo-600 font-bold' : isDone ? 'text-emerald-600' : 'text-slate-400'
+                        }`} title={tahap.tahapan}>
+                          {tahap.tahapan.length > 12 ? tahap.tahapan.substring(0, 11) + '…' : tahap.tahapan}
+                        </p>
                       </div>
-                    );
-                  })}
-                </div>
+                      {hasNext && (
+                        <div className={`${isCompactDecisionFlow ? 'w-20 md:w-28' : 'flex-1'} h-0.5 mt-[19px] rounded-full transition-all duration-500 ease-in-out ${
+                          hideConnector
+                            ? 'w-0 opacity-0 mx-0'
+                            : `mx-1 opacity-100 ${isDone && nextDone ? 'bg-emerald-400' : isDone ? 'bg-emerald-200' : 'bg-slate-200'}`
+                        }`}></div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
