@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { TAHAPAN_AUDIT } from '../data';
@@ -19,6 +19,7 @@ const ProsesAudit = () => {
   const userName = currentUser?.name || '';
   const TOTAL_TAHAP = TAHAPAN_AUDIT.length;
   const TAHAP_DRAFT_LHK = 10;
+  const TAHAP_KEPUTUSAN = 2;
   const TAHAP_AUDITEE_UPLOAD = [1, 6];
   const [konsultasiData, setKonsultasiData] = useState([]);
 
@@ -103,27 +104,56 @@ const ProsesAudit = () => {
 
   const fileInputRefs = useRef({});
 
-  // Calculate progress for a specific konsultasi
+  const isRejectedFlow = useCallback((konsultasi) => {
+    if (!konsultasi) return false;
+    const files = allUploadedFiles[konsultasi.id] || {};
+    return konsultasi.statusRaw === 'cancelled' || !!files[TAHAP_KEPUTUSAN];
+  }, [allUploadedFiles, TAHAP_KEPUTUSAN]);
+
+  const getVisibleTahapan = useCallback((konsultasi) => {
+    if (!isRejectedFlow(konsultasi)) return TAHAPAN_AUDIT;
+    return TAHAPAN_AUDIT.filter((t) => t.no <= TAHAP_KEPUTUSAN);
+  }, [isRejectedFlow, TAHAP_KEPUTUSAN]);
+
+  // Calculate progress for a specific konsultasi based on branch visibility
   const getProgress = (konsultasiId) => {
-    const backendProgress = konsultasiData.find((k) => k.id === konsultasiId)?.progress_percentage;
-    if (typeof backendProgress === 'number') return backendProgress;
+    const konsultasi = konsultasiData.find((k) => k.id === konsultasiId);
+    if (!konsultasi) return 0;
 
     const files = allUploadedFiles[konsultasiId] || {};
-    const completed = Object.values(files).filter(f => f !== null).length;
-    return Math.round((completed / TOTAL_TAHAP) * 100);
+    const visibleTahapanForRow = getVisibleTahapan(konsultasi);
+    const completed = visibleTahapanForRow.reduce((acc, tahap) => (files[tahap.no] ? acc + 1 : acc), 0);
+    const totalTahapan = Math.max(visibleTahapanForRow.length, 1);
+
+    return Math.round((completed / totalTahapan) * 100);
   };
 
-  // Get uploaded files for selected konsultasi
+  // Get uploaded files and active visible stages for selected konsultasi
   const uploadedFiles = selectedKonsultasi ? (allUploadedFiles[selectedKonsultasi.id] || {}) : {};
-  const completedCount = Object.values(uploadedFiles).filter(f => f !== null).length;
-  const pendingCount = Math.max(TOTAL_TAHAP - completedCount, 0);
+  const visibleTahapan = useMemo(() => {
+    if (!selectedKonsultasi) return TAHAPAN_AUDIT;
+    return getVisibleTahapan(selectedKonsultasi);
+  }, [selectedKonsultasi, getVisibleTahapan]);
+
+  const maxVisibleTahap = visibleTahapan[visibleTahapan.length - 1]?.no || TOTAL_TAHAP;
+  const completedCount = visibleTahapan.reduce((acc, tahap) => (uploadedFiles[tahap.no] ? acc + 1 : acc), 0);
+  const pendingCount = Math.max(visibleTahapan.length - completedCount, 0);
   const progressPercent = selectedKonsultasi ? getProgress(selectedKonsultasi.id) : 0;
+  const isSelectedRejectedFlow = selectedKonsultasi ? isRejectedFlow(selectedKonsultasi) : false;
+
+  useEffect(() => {
+    if (!selectedTahap) return;
+    const availableTahap = visibleTahapan.some((t) => t.no === selectedTahap);
+    if (!availableTahap) {
+      setSelectedTahap(visibleTahapan[0]?.no || null);
+    }
+  }, [selectedTahap, visibleTahapan]);
 
   // Filter konsultasi berdasarkan role:
   // Auditee: hanya lihat konsultasi milik sendiri (berdasarkan nama)
   // Auditor: lihat semua konsultasi yang dikirim ke biro-nya
   // Manajemen: lihat semua konsultasi
-  const daftarKonsultasi = konsultasiData.filter((k) => k.statusRaw !== 'cancelled');
+  const daftarKonsultasi = konsultasiData;
 
   // Check if user can upload a specific tahap
   // Rule upload:
@@ -421,7 +451,7 @@ const ProsesAudit = () => {
               <IconFolderOpen className="w-7 h-7 text-indigo-400" />
             </div>
             <h3 className="font-bold text-slate-800 mb-1">Belum Ada Konsultasi</h3>
-            <p className="text-sm text-slate-500">Proses Konsultasi hanya menampilkan data dengan status Dalam Proses. Ubah status dari menu Status Konsultasi terlebih dahulu.</p>
+            <p className="text-sm text-slate-500">Belum ada data proses konsultasi yang dapat ditampilkan.</p>
           </div>
         )}
       </div>
@@ -457,7 +487,7 @@ const ProsesAudit = () => {
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-700">{completedCount}/{TOTAL_TAHAP}</p>
+                    <p className="text-xs font-bold text-slate-700">{completedCount}/{visibleTahapan.length}</p>
                     <p className="text-[10px] text-slate-400">tahap selesai</p>
                   </div>
                 </div>
@@ -486,7 +516,7 @@ const ProsesAudit = () => {
               </div>
               <div className="flex items-center gap-3">
                 <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${progressPercent === 100 ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-50 text-indigo-700'}`}>
-                  {completedCount}/{TOTAL_TAHAP} selesai
+                  {completedCount}/{visibleTahapan.length} selesai
                 </div>
                 <div className="relative w-10 h-10">
                   <svg className="w-10 h-10 transform -rotate-90">
@@ -513,16 +543,22 @@ const ProsesAudit = () => {
 
             {/* Horizontal Stepper — semantic colors only */}
             <div className="px-4 md:px-6 py-6">
-              <p className="text-[11px] text-amber-700 mb-4 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                Alur keputusan: jika Tahap 2 ditolak, proses berhenti dan terbit Nota Dinas (status Ditolak). Jika diterima, lanjut ke Tahap 3 sampai Tahap 13.
-              </p>
+              {isSelectedRejectedFlow ? (
+                <p className="text-[11px] text-red-700 mb-4 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  Konsultasi ditolak: hanya Tahap 1-2 yang ditampilkan karena dokumen keputusan (Nota Dinas/NDE) pada Tahap 2 sudah terunggah.
+                </p>
+              ) : (
+                <p className="text-[11px] text-amber-700 mb-4 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  Alur keputusan: jika Tahap 2 ditolak dan dokumen Nota Dinas/NDE diunggah, sistem hanya menampilkan Tahap 1-2. Jika Tahap 2 masih kosong, alur lanjut ke Tahap 3-13.
+                </p>
+              )}
               <div className="flex items-start">
-                {TAHAPAN_AUDIT.map((tahap, idx) => {
+                {visibleTahapan.map((tahap, idx) => {
                   const isDone = !!uploadedFiles[tahap.no];
                   const isActive = selectedTahap === tahap.no;
-                  const isLast = idx === TAHAPAN_AUDIT.length - 1;
+                  const isLast = idx === visibleTahapan.length - 1;
                   const canUploadThis = canUploadInProcess(tahap.no);
-                  const nextDone = !isLast && !!uploadedFiles[TAHAPAN_AUDIT[idx + 1]?.no];
+                  const nextDone = !isLast && !!uploadedFiles[visibleTahapan[idx + 1]?.no];
                   return (
                     <div key={tahap.no} className="flex items-start flex-1 last:flex-none">
                       <div className="flex flex-col items-center">
@@ -565,7 +601,7 @@ const ProsesAudit = () => {
 
             {/* Detail Panel — clean, consistent indigo/emerald/slate */}
             {selectedTahap && (() => {
-              const tahap = TAHAPAN_AUDIT.find(t => t.no === selectedTahap);
+              const tahap = visibleTahapan.find(t => t.no === selectedTahap);
               const isDone = !!uploadedFiles[selectedTahap];
               const file = uploadedFiles[selectedTahap];
               const canUploadThis = canUploadInProcess(selectedTahap);
@@ -612,19 +648,31 @@ const ProsesAudit = () => {
                         <div className="flex items-center gap-2 mt-5 ml-[56px]">
                           <button
                             onClick={() => setSelectedTahap(prev => Math.max(1, prev - 1))}
-                            disabled={selectedTahap === 1}
+                            disabled={selectedTahap === 1 || selectedTahap === visibleTahapan[0]?.no}
                             className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
                           >
                             <IconArrowLeft className="w-3 h-3" /> Sebelumnya
                           </button>
                           <button
-                            onClick={() => setSelectedTahap(prev => Math.min(TOTAL_TAHAP, prev + 1))}
-                            disabled={selectedTahap === TOTAL_TAHAP}
+                            onClick={() => setSelectedTahap(prev => Math.min(maxVisibleTahap, prev + 1))}
+                            disabled={selectedTahap === maxVisibleTahap}
                             className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
                           >
                             Selanjutnya <IconArrowLeft className="w-3 h-3 rotate-180" />
                           </button>
                         </div>
+
+                        {selectedTahap === TAHAP_KEPUTUSAN && !isDone && !isSelectedRejectedFlow && canUploadThis && (
+                          <div className="ml-[56px] mt-3">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedTahap(3)}
+                              className="px-3.5 py-2 rounded-lg bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600 transition-all"
+                            >
+                              Konsultasi Diterima, Lanjut Membuat Surat Tugas
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       {/* Right: Upload / File / Locked */}
