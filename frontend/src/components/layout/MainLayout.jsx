@@ -72,6 +72,7 @@ const MainLayout = () => {
             .slice(0, 8)
             .map((conv) => ({
               id: `conv-${conv.id}`,
+              conversationId: conv.id,
               title: conv.subject || `Konsultasi #${conv.id}`,
               subtitle: conv.latest_message?.content || 'Ada pesan baru',
               time: new Date(conv.latest_message?.created_at || conv.last_message_at || conv.created_at).toLocaleString('id-ID', {
@@ -131,6 +132,16 @@ const MainLayout = () => {
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [currentUser?.id, isAdminLike, isChatRole]);
+
+  const handleNotificationClick = (item) => {
+    if (!item) return;
+
+    setNotifOpen(false);
+
+    if (isChatRole && item.conversationId) {
+      navigate(`/konsultasi?conversation=${item.conversationId}`);
+    }
+  };
 
   useEffect(() => {
     const onOutside = (event) => {
@@ -382,14 +393,19 @@ const MainLayout = () => {
                   <div className="max-h-[360px] overflow-y-auto">
                     {notifications.length > 0 ? (
                       notifications.map((item) => (
-                        <div key={item.id} className={`px-4 py-3 border-b last:border-b-0 transition-colors ${isNightMode ? 'border-slate-800 hover:bg-slate-800/70' : 'border-slate-100 hover:bg-slate-50'}`}>
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => handleNotificationClick(item)}
+                          className={`w-full text-left px-4 py-3 border-b last:border-b-0 transition-colors ${isNightMode ? 'border-slate-800 hover:bg-slate-800/70' : 'border-slate-100 hover:bg-slate-50'} ${isChatRole && item.conversationId ? 'cursor-pointer' : 'cursor-default'}`}
+                        >
                           <p className={`text-sm font-semibold truncate ${isNightMode ? 'text-slate-100' : 'text-slate-800'}`}>{item.title}</p>
                           <p className={`text-xs mt-0.5 truncate ${isNightMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.subtitle}</p>
                           <p className={`text-[10px] mt-1.5 flex items-center gap-1 ${isNightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                             <IconClock className="w-3 h-3" />
                             {item.time}
                           </p>
-                        </div>
+                        </button>
                       ))
                     ) : (
                       <div className="px-4 py-10 text-center">

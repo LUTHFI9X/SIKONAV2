@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { conversationAPI, messageAPI } from '../services/api';
 import { subscribeToUserRealtime } from '../services/realtime';
@@ -17,6 +17,8 @@ const AUTO_PREVIEW_ATTACHMENTS = false;
 
 const Konsultasi = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const currentUser = user;
   const userRole = currentUser?.role || 'auditee';
   const [auditors, setAuditors] = useState([]);
@@ -258,6 +260,28 @@ const Konsultasi = () => {
     if (!selectedChat?.id) return;
     loadMessages(selectedChat.id);
   }, [selectedChat?.id, loadMessages]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const rawConversationId = params.get('conversation');
+    if (!rawConversationId) return;
+
+    const conversationId = Number(rawConversationId);
+    if (!Number.isFinite(conversationId)) {
+      navigate('/konsultasi', { replace: true });
+      return;
+    }
+
+    const targetConversation = conversations.find((conv) => Number(conv.id) === conversationId);
+    if (!targetConversation) return;
+
+    if (Number(selectedChat?.id) !== conversationId) {
+      setSelectedChat(targetConversation);
+      loadMessages(targetConversation.id, { silent: true });
+    }
+
+    navigate('/konsultasi', { replace: true });
+  }, [location.search, conversations, selectedChat?.id, loadMessages, navigate]);
 
   useEffect(() => {
     if (!selectedChat?.id) return;
