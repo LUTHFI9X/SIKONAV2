@@ -143,6 +143,11 @@ export const auditAPI = {
   downloadDokumen: (id, tahapNo) => api.get(`/audit-processes/${id}/dokumen/${tahapNo}/download`, { responseType: 'blob' }),
   deleteDokumen: (id, tahapNo) => api.delete(`/audit-processes/${id}/dokumen/${tahapNo}`),
   updateCatatan: (id, catatan) => api.put(`/audit-processes/${id}/catatan`, { catatan_auditor: catatan }),
+  updateLhkStage: (id, stage) => api.put(`/audit-processes/${id}/lhk-stage`, { stage }),
+  updateLhkReview: (id, reviewNote, reviewApproved) => api.put(`/audit-processes/${id}/lhk-review`, {
+    review_note: reviewNote,
+    review_approved: reviewApproved,
+  }),
   updateStatus: (id, status) => api.put(`/audit-processes/${id}/status`, { status }),
   getNotes: (id, type) => api.get(`/audit-processes/${id}/notes`, { params: { type } }),
   addNote: (id, type, message) => api.post(`/audit-processes/${id}/notes`, { type, message }),

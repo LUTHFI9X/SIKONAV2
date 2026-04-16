@@ -6,7 +6,7 @@ import Skeleton, { SkeletonText, SkeletonTableRows } from '../components/Skeleto
 import {
   IconFileAlt, IconUpload, IconDownload, IconCheckCircle,
   IconExclamationCircle, IconSearch, IconChevronDown, IconClock,
-  IconEye, IconTrash, IconXCircle, IconArchive, IconSpinner
+  IconEye, IconTrash, IconXCircle, IconArchive, IconSpinner, IconArrowRight
 } from '../components/Icons';
 
 /* ═══════════════════════════════════════
@@ -16,6 +16,7 @@ const ROWS_PER_PAGE = 7;
 
 const STATUS_CONFIG = {
   draft:    { label: 'Draft',           color: 'text-blue-600',    bg: 'bg-blue-50',    border: 'border-blue-200',  dot: 'bg-blue-400',    icon: IconSpinner },
+  review:   { label: 'Review',          color: 'text-amber-600',   bg: 'bg-amber-50',   border: 'border-amber-200', dot: 'bg-amber-400',   icon: IconClock },
   arsip:    { label: 'Diarsipkan',      color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-400', icon: IconArchive },
 };
 
@@ -60,7 +61,7 @@ const Laporan = () => {
   const [laporan, setLaporan]           = useState({});
   const [searchQuery, setSearchQuery]   = useState('');
   const [filterBiro, setFilterBiro]     = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all'); // all | belum | draft | arsip
+  const [filterStatus, setFilterStatus] = useState('all'); // all | belum | draft | review | arsip
   const [currentPage, setCurrentPage]   = useState(1);
   const [detailId, setDetailId]         = useState(null);    // slide-over
   const [uploadModal, setUploadModal]   = useState(null);    // upload target id
@@ -130,6 +131,9 @@ const Laporan = () => {
         const targetDoc = draftDoc || fallbackDoc;
         if (!targetDoc) return;
 
+        const lhkStage = p.lhk_stage === 'review' ? 'review' : 'draft';
+        const mappedStatus = p.status === 'completed' ? 'arsip' : lhkStage;
+
         mappedLaporan[p.id] = {
           auditProcessId: p.id,
           tahapNo: Number(targetDoc.tahap_no),
@@ -139,7 +143,9 @@ const Laporan = () => {
           nomorLHK: '',
           perihal: `Audit ${p.tahun_audit || ''}`.trim(),
           catatan: p.catatan_auditor || '',
-          status: p.status === 'completed' ? 'arsip' : 'draft',
+          reviewNote: p.lhk_review_note || '',
+          reviewApproved: p.lhk_review_approved,
+          status: mappedStatus,
         };
       });
 
@@ -175,6 +181,7 @@ const Laporan = () => {
     if (filterBiro !== 'all')   data = data.filter(k => k.kategori === filterBiro);
     if (filterStatus === 'belum')  data = data.filter(k => !laporan[k.id]);
     if (filterStatus === 'draft')  data = data.filter(k => laporan[k.id]?.status === 'draft');
+    if (filterStatus === 'review') data = data.filter(k => laporan[k.id]?.status === 'review');
     if (filterStatus === 'arsip')  data = data.filter(k => laporan[k.id]?.status === 'arsip');
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -200,8 +207,9 @@ const Laporan = () => {
     const relevant = isAuditor && userBiro ? konsultasiProses.filter(k => k.kategori === userBiro) : konsultasiProses;
     const uploaded = relevant.filter(k => laporan[k.id]);
     const inDraft    = relevant.filter(k => laporan[k.id]?.status === 'draft');
+    const inReview   = relevant.filter(k => laporan[k.id]?.status === 'review');
     const archived   = relevant.filter(k => laporan[k.id]?.status === 'arsip');
-    return { total: relevant.length, uploaded: uploaded.length, belum: relevant.length - uploaded.length, inDraft: inDraft.length, archived: archived.length };
+    return { total: relevant.length, uploaded: uploaded.length, belum: relevant.length - uploaded.length, inDraft: inDraft.length, inReview: inReview.length, archived: archived.length };
   }, [laporan, isAuditor, userBiro]);
 
   /* ── Detail ── */
@@ -244,8 +252,8 @@ const Laporan = () => {
       return;
     }
 
-    if (existing.status === 'arsip') {
-      alert('Dokumen arsip tidak dapat dihapus atau diganti.');
+    if (existing.status !== 'draft') {
+      alert('Dokumen hanya bisa dihapus saat status Draft.');
       return;
     }
 
@@ -289,17 +297,15 @@ const Laporan = () => {
 
   const handleSubmitUpload = async () => {
     if (!selectedFile || !uploadModal) return;
-    if (laporan[uploadModal]?.status === 'arsip') {
-      alert('Dokumen arsip tidak dapat dihapus atau diganti.');
+    if (laporan[uploadModal] && laporan[uploadModal]?.status !== 'draft') {
+      alert('Dokumen hanya bisa diganti saat status Draft.');
       return;
     }
     if (!uploadForm.nomorLHK.trim()) { alert('Nomor LHK wajib diisi.'); return; }
     if (!uploadForm.perihal.trim())  { alert('Perihal wajib diisi.'); return; }
-    const pad = (n) => String(n).padStart(2, '0');
-    const now = new Date();
-    const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
     try {
       await auditAPI.uploadDokumen(uploadModal, selectedFile, DRAFT_LHK_TAHAP);
+      await auditAPI.updateLhkStage(uploadModal, 'draft');
       if (uploadForm.catatan.trim()) {
         await auditAPI.updateCatatan(uploadModal, uploadForm.catatan.trim());
       }
@@ -319,13 +325,31 @@ const Laporan = () => {
     }
   };
 
+  const handleMoveToReview = async (id) => {
+    const existing = laporan[id];
+    if (!existing) return;
+    if (existing.status !== 'draft') {
+      alert('Hanya draft yang dapat dipindahkan ke tahap Review.');
+      return;
+    }
+
+    try {
+      await auditAPI.updateLhkStage(id, 'review');
+      await fetchData();
+      setFlashMessage('Draft LHK berhasil dipindahkan ke tahap Review.');
+    } catch (error) {
+      console.error('Pindah ke review gagal:', error);
+      alert(error?.response?.data?.message || 'Gagal memindahkan draft ke tahap Review.');
+    }
+  };
+
   const handleBulkArchive = async () => {
     const targetIds = filteredData
-      .filter((k) => laporan[k.id] && laporan[k.id].status === 'draft')
+      .filter((k) => laporan[k.id] && laporan[k.id].status === 'review' && laporan[k.id].reviewApproved === true)
       .map((k) => k.id);
 
     if (targetIds.length === 0) {
-      alert('Tidak ada draft yang dapat diarsipkan pada filter saat ini.');
+      alert('Tidak ada laporan review (ON) yang dapat diarsipkan pada filter saat ini.');
       return;
     }
 
@@ -339,10 +363,10 @@ const Laporan = () => {
     try {
       await Promise.all(targetIds.map((id) => auditAPI.updateStatus(id, 'completed')));
       await fetchData();
-      setFlashMessage(`${targetIds.length} draft berhasil diarsipkan.`);
+      setFlashMessage(`${targetIds.length} laporan review berhasil diarsipkan.`);
     } catch (error) {
       console.error('Bulk archive gagal:', error);
-      alert('Gagal mengarsipkan sebagian draft. Coba lagi.');
+      alert('Gagal mengarsipkan sebagian laporan review. Coba lagi.');
     }
   };
 
@@ -367,7 +391,13 @@ const Laporan = () => {
 
   /* ── Status Advancement (Auditor) ── */
   const handleAdvanceStatus = async (id) => {
-    if (laporan[id]?.status === 'arsip') {
+    const current = laporan[id];
+    if (!current || current.status !== 'review') {
+      return;
+    }
+
+    if (current.reviewApproved !== true) {
+      alert('Review Tahap 11 masih OFF. Aktifkan ON di Proses Konsultasi sebelum arsip.');
       return;
     }
 
@@ -487,9 +517,9 @@ const Laporan = () => {
               <div className="w-6 h-6 bg-white/10 rounded-lg flex items-center justify-center"><IconFileAlt className="w-3.5 h-3.5 text-indigo-300" /></div>
               <span className="text-indigo-300 text-[10px] font-medium uppercase tracking-wider">Laporan Hasil Konsultasi</span>
             </div>
-            <h1 className="text-xl font-bold tracking-tight">{isKSPI ? 'Monitoring Draft LHK' : 'Kelola Draft LHK'}</h1>
+            <h1 className="text-xl font-bold tracking-tight">{isKSPI ? 'Monitoring Draft & Review LHK' : 'Kelola Draft & Review LHK'}</h1>
             <p className="text-indigo-200/50 text-[11px] mt-0.5 max-w-md">
-              {isKSPI ? 'Lihat dan download draft LHK dari seluruh biro auditor.' : 'Upload, kelola draft, dan arsipkan LHK.'}
+              {isKSPI ? 'Lihat dan download dokumen Draft/Review LHK dari seluruh biro auditor.' : 'Upload Draft (Tahap 10), lanjut Review (Tahap 11), lalu arsipkan.'}
             </p>
           </div>
 
@@ -498,6 +528,7 @@ const Laporan = () => {
             {[
               { label: 'Total',    value: stats.total,    color: 'text-white' },
               { label: 'Draft',    value: stats.inDraft,   color: 'text-blue-300' },
+              { label: 'Review',   value: stats.inReview,  color: 'text-amber-300' },
               { label: 'Arsip',    value: stats.archived,  color: 'text-emerald-300' },
             ].map((s, i) => (
               <div key={i} className="text-center px-3.5 py-1.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
@@ -510,11 +541,12 @@ const Laporan = () => {
       </div>
 
       {/* ── Status Flow Cards ── */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
           { key: 'all',    label: 'Semua',         value: stats.total,    icon: <IconFileAlt className="w-4 h-4" />,   bg: 'bg-indigo-50',  ic: 'text-indigo-500',  ring: 'ring-indigo-100 border-indigo-300' },
           { key: 'belum',  label: 'Belum Upload',  value: stats.belum,    icon: <IconClock className="w-4 h-4" />,     bg: 'bg-slate-50',   ic: 'text-slate-500',   ring: 'ring-slate-100 border-slate-300' },
           { key: 'draft',  label: 'Draft',         value: stats.inDraft,  icon: <IconSpinner className="w-4 h-4" />,   bg: 'bg-blue-50',    ic: 'text-blue-500',    ring: 'ring-blue-100 border-blue-300' },
+          { key: 'review', label: 'Review',        value: stats.inReview, icon: <IconClock className="w-4 h-4" />,     bg: 'bg-amber-50',   ic: 'text-amber-500',   ring: 'ring-amber-100 border-amber-300' },
           { key: 'arsip',  label: 'Diarsipkan',    value: stats.archived, icon: <IconArchive className="w-4 h-4" />,   bg: 'bg-emerald-50', ic: 'text-emerald-500', ring: 'ring-emerald-100 border-emerald-300' },
         ].map((f) => (
           <button key={f.key} onClick={() => setStatus(f.key)}
@@ -562,7 +594,7 @@ const Laporan = () => {
               onClick={handleBulkArchive}
               className="px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold hover:bg-emerald-100 transition-colors"
             >
-              Arsipkan Semua Draft
+              Arsipkan Semua Review (ON)
             </button>
           )}
           <span className="text-[11px] text-slate-400 font-medium ml-auto">{filteredData.length} konsultasi</span>
@@ -711,7 +743,7 @@ const Laporan = () => {
         {isKSPI && (
           <div className="px-5 py-2.5 bg-indigo-50 border-t border-indigo-200/60 flex items-center gap-2">
             <IconExclamationCircle className="w-4 h-4 text-indigo-400 flex-shrink-0" />
-            <p className="text-[10px] text-indigo-500 font-medium">Mode View-Only — Upload, kelola draft, dan arsip hanya dapat dilakukan oleh auditor biro terkait.</p>
+            <p className="text-[10px] text-indigo-500 font-medium">Mode View-Only — Upload Draft, kelola Review, dan arsip hanya dapat dilakukan oleh auditor biro terkait.</p>
           </div>
         )}
       </div>
@@ -761,6 +793,7 @@ const Laporan = () => {
                           <span className={`text-sm font-bold ${cfg.color}`}>{cfg.label}</span>
                           <p className="text-[10px] text-slate-500 mt-0.5">
                             {detailLaporan.status === 'draft' && 'Masih berstatus draft. Dokumen masih dapat diganti atau dihapus.'}
+                            {detailLaporan.status === 'review' && 'Sedang masuk tahap review. Keputusan ON/OFF Tahap 11 dikelola di Proses Konsultasi.'}
                             {detailLaporan.status === 'arsip' && 'Dokumen telah diarsipkan dan tidak dapat dihapus atau diganti.'}
                           </p>
                         </div>
@@ -770,8 +803,8 @@ const Laporan = () => {
 
                   {/* Status Flow Indicator */}
                   <div className="flex items-center gap-1 px-2">
-                    {['draft', 'arsip'].map((step, i) => {
-                      const stepOrder = { draft: 0, arsip: 1 };
+                    {['draft', 'review', 'arsip'].map((step, i) => {
+                      const stepOrder = { draft: 0, review: 1, arsip: 2 };
                       const currentOrder = stepOrder[detailLaporan.status] ?? 0;
                       const isCompleted = stepOrder[step] <= currentOrder;
                       const isCurrent = step === detailLaporan.status;
@@ -788,10 +821,10 @@ const Laporan = () => {
                               {isCompleted && !isCurrent ? <IconCheckCircle className="w-4 h-4" /> : i + 1}
                             </div>
                             <p className={`text-[9px] font-semibold mt-1.5 ${isCompleted ? 'text-slate-700' : 'text-slate-300'}`}>
-                              {step === 'draft' ? 'Draft' : 'Arsip'}
+                              {step === 'draft' ? 'Draft' : step === 'review' ? 'Review' : 'Arsip'}
                             </p>
                           </div>
-                          {i < 1 && (
+                          {i < 2 && (
                             <div className={`h-0.5 flex-1 rounded-full mx-1 mb-5 ${stepOrder[step] < currentOrder ? 'bg-emerald-400' : 'bg-slate-200'}`} />
                           )}
                         </div>
@@ -883,7 +916,18 @@ const Laporan = () => {
                     <button onClick={() => handleDelete(detailId)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-red-50 text-red-500 text-sm font-semibold rounded-xl hover:bg-red-100 border border-red-200/60 transition-colors">
                       <IconTrash className="w-4 h-4" /> Hapus
                     </button>
-                    <button onClick={() => handleAdvanceStatus(detailId)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-50 text-emerald-600 text-sm font-semibold rounded-xl hover:bg-emerald-100 border border-emerald-200/60 transition-colors">
+                    <button onClick={() => handleMoveToReview(detailId)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-indigo-50 text-indigo-600 text-sm font-semibold rounded-xl hover:bg-indigo-100 border border-indigo-200/60 transition-colors">
+                      <IconArrowRight className="w-4 h-4" /> Ke Review
+                    </button>
+                  </div>
+                )}
+                {isAuditor && detailLaporan.status === 'review' && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleAdvanceStatus(detailId)}
+                      disabled={detailLaporan.reviewApproved !== true}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-50 text-emerald-600 text-sm font-semibold rounded-xl hover:bg-emerald-100 border border-emerald-200/60 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
                       <IconArchive className="w-4 h-4" /> Arsipkan
                     </button>
                   </div>

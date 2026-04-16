@@ -54,6 +54,13 @@ class AuditProcess extends Model
         'catatan_auditor',
         'dokumen_path',
         'status',
+        'lhk_stage',
+        'lhk_review_approved',
+        'lhk_review_note',
+    ];
+
+    protected $casts = [
+        'lhk_review_approved' => 'boolean',
     ];
 
     public function auditee()

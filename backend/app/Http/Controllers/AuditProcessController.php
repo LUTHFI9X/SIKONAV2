@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 class AuditProcessController extends Controller
 {
     private const MAX_TAHAP_KONSULTASI = 13;
+    private const TAHAP_DRAFT_LHK = 10;
 
     private function canManageAudit(User $user): bool
     {
@@ -215,6 +216,14 @@ class AuditProcessController extends Controller
 
         $auditProcess->update(['dokumen_path' => $path]);
 
+        if ($tahapNo === self::TAHAP_DRAFT_LHK) {
+            $auditProcess->update([
+                'lhk_stage' => 'draft',
+                'lhk_review_approved' => null,
+                'lhk_review_note' => null,
+            ]);
+        }
+
         $tahapField = 'tahap_' . $tahapNo . '_' . $this->getTahapName($tahapNo);
         if ($tahapField && in_array($tahapField, $auditProcess->getFillable(), true)) {
             $auditProcess->update([$tahapField => 'selesai']);
@@ -262,6 +271,14 @@ class AuditProcessController extends Controller
         $tahapField = 'tahap_' . $tahapNo . '_' . $this->getTahapName($tahapNo);
         if ($tahapField && in_array($tahapField, $auditProcess->getFillable(), true)) {
             $auditProcess->update([$tahapField => 'belum']);
+        }
+
+        if ($tahapNo === self::TAHAP_DRAFT_LHK) {
+            $auditProcess->update([
+                'lhk_stage' => 'draft',
+                'lhk_review_approved' => null,
+                'lhk_review_note' => null,
+            ]);
         }
 
         return response()->json(['message' => 'Dokumen berhasil dihapus.']);
@@ -328,6 +345,15 @@ class AuditProcessController extends Controller
             'status' => 'required|in:pending,in_progress,completed,cancelled',
         ]);
 
+        if ($request->status === 'completed') {
+            $hasDraftLhk = $auditProcess->documents()->where('tahap_no', self::TAHAP_DRAFT_LHK)->exists();
+            if ($hasDraftLhk && $auditProcess->lhk_review_approved !== true) {
+                return response()->json([
+                    'message' => 'Status arsip hanya dapat dilakukan setelah review Tahap 11 diset ON.',
+                ], 422);
+            }
+        }
+
         $auditProcess->update(['status' => $request->status]);
 
         $mappedConversationStatus = match ($request->status) {
@@ -343,6 +369,84 @@ class AuditProcessController extends Controller
         }
 
         return response()->json(['audit_process' => $auditProcess]);
+    }
+
+    public function updateLhkStage(Request $request, AuditProcess $auditProcess)
+    {
+        if (!$this->canAccessAuditProcess($request->user(), $auditProcess)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (!$this->canManageAudit($request->user())) {
+            return response()->json(['message' => 'Anda tidak memiliki izin mengubah tahap LHK.'], 403);
+        }
+
+        $validated = $request->validate([
+            'stage' => 'required|in:draft,review',
+        ]);
+
+        $targetStage = $validated['stage'];
+
+        if ($targetStage === 'review') {
+            $hasDraftLhk = $auditProcess->documents()->where('tahap_no', self::TAHAP_DRAFT_LHK)->exists();
+            if (!$hasDraftLhk) {
+                return response()->json([
+                    'message' => 'Upload draft LHK Tahap 10 terlebih dahulu sebelum masuk review.',
+                ], 422);
+            }
+        }
+
+        $payload = ['lhk_stage' => $targetStage];
+
+        if ($targetStage === 'draft') {
+            $payload['lhk_review_approved'] = null;
+            $payload['lhk_review_note'] = null;
+        }
+
+        if ($auditProcess->status === 'pending') {
+            $payload['status'] = 'in_progress';
+        }
+
+        $auditProcess->update($payload);
+
+        return response()->json(['audit_process' => $auditProcess->fresh()]);
+    }
+
+    public function updateLhkReview(Request $request, AuditProcess $auditProcess)
+    {
+        if (!$this->canAccessAuditProcess($request->user(), $auditProcess)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (!$this->canManageAudit($request->user())) {
+            return response()->json(['message' => 'Anda tidak memiliki izin mengubah review Tahap 11.'], 403);
+        }
+
+        $validated = $request->validate([
+            'review_note' => 'nullable|string|max:5000',
+            'review_approved' => 'required|boolean',
+        ]);
+
+        $hasDraftLhk = $auditProcess->documents()->where('tahap_no', self::TAHAP_DRAFT_LHK)->exists();
+        if (!$hasDraftLhk) {
+            return response()->json([
+                'message' => 'Upload draft LHK Tahap 10 terlebih dahulu sebelum melakukan review Tahap 11.',
+            ], 422);
+        }
+
+        $payload = [
+            'lhk_stage' => 'review',
+            'lhk_review_note' => $validated['review_note'] ?? null,
+            'lhk_review_approved' => (bool) $validated['review_approved'],
+        ];
+
+        if ($auditProcess->status === 'pending') {
+            $payload['status'] = 'in_progress';
+        }
+
+        $auditProcess->update($payload);
+
+        return response()->json(['audit_process' => $auditProcess->fresh()]);
     }
 
     public function notes(Request $request, AuditProcess $auditProcess)

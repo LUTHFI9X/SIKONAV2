@@ -23,7 +23,7 @@ const ProsesAudit = () => {
   const TAHAP_KEPUTUSAN = 2;
   const TAHAP_AUDITEE_UPLOAD = [1, 6];
   const TAHAP_AUDITEE_VIEW = [1, 2, 6];
-  const TAHAP_LAPORAN_ONLY = [TAHAP_DRAFT_LHK, TAHAP_REVIEW_LHK];
+  const TAHAP_LAPORAN_ONLY = [TAHAP_DRAFT_LHK];
   const [konsultasiData, setKonsultasiData] = useState([]);
 
   // State untuk selected konsultasi
@@ -46,6 +46,9 @@ const ProsesAudit = () => {
         kategori: p.biro || p.auditor?.biro || '-',
         progress_percentage: p.progress_percentage || 0,
         statusRaw: p.status || 'pending',
+        lhkStage: p.lhk_stage === 'review' ? 'review' : 'draft',
+        lhkReviewApproved: p.lhk_review_approved,
+        lhkReviewNote: p.lhk_review_note || '',
         raw: p,
       }));
 
@@ -78,6 +81,11 @@ const ProsesAudit = () => {
         return acc;
       }, {}));
 
+      setReviewTahap11Notes(processes.reduce((acc, p) => {
+        acc[p.id] = p.lhk_review_note || '';
+        return acc;
+      }, {}));
+
       setSelectedKonsultasi((prev) => {
         if (!prev) return prev;
         const refreshed = mapped.find((item) => item.id === prev.id);
@@ -104,6 +112,8 @@ const ProsesAudit = () => {
 
   // State untuk catatan auditor per konsultasi
   const [catatanAuditor, setCatatanAuditor] = useState({});
+  const [reviewTahap11Notes, setReviewTahap11Notes] = useState({});
+  const [savingReviewDecision, setSavingReviewDecision] = useState(false);
 
   const fileInputRefs = useRef({});
   const [acceptedDecisions, setAcceptedDecisions] = useState({});
@@ -127,9 +137,27 @@ const ProsesAudit = () => {
     return !isRejectedFlow(konsultasi) && acceptedMarked;
   }, [acceptedDecisions, isRejectedFlow]);
 
+  const getLhkReviewDecision = useCallback((konsultasi) => {
+    if (!konsultasi) return null;
+    const rawValue = konsultasi.lhkReviewApproved;
+    if (rawValue === true || rawValue === 1 || rawValue === '1') return true;
+    if (rawValue === false || rawValue === 0 || rawValue === '0') return false;
+    return null;
+  }, []);
+
   const getTahapState = useCallback((konsultasi, tahapNo, files) => {
-    if (tahapNo === TAHAP_REVIEW_LHK && konsultasi?.statusRaw === 'completed') {
-      return 'done';
+    if (tahapNo === TAHAP_REVIEW_LHK) {
+      const reviewDecision = getLhkReviewDecision(konsultasi);
+
+      if (konsultasi?.statusRaw === 'completed' || reviewDecision === true) {
+        return 'done';
+      }
+
+      if (reviewDecision === false) {
+        return 'rejected';
+      }
+
+      return 'pending';
     }
 
     if (tahapNo !== TAHAP_KEPUTUSAN) {
@@ -140,9 +168,16 @@ const ProsesAudit = () => {
     if (isAcceptedFlow(konsultasi)) return 'accepted';
 
     return files[tahapNo] ? 'done' : 'pending';
-  }, [TAHAP_KEPUTUSAN, TAHAP_REVIEW_LHK, isRejectedFlow, isAcceptedFlow]);
+  }, [TAHAP_KEPUTUSAN, TAHAP_REVIEW_LHK, isRejectedFlow, isAcceptedFlow, getLhkReviewDecision]);
 
-  const isTahapCompleted = (state) => state !== 'pending';
+  const isTahapCompleted = (state, tahapNo) => {
+    // Tahap 11 dengan keputusan OFF (merah) tidak dihitung selesai.
+    if (tahapNo === TAHAP_REVIEW_LHK && state === 'rejected') {
+      return false;
+    }
+
+    return state !== 'pending';
+  };
 
   // Calculate progress for a specific konsultasi based on branch visibility
   const getProgress = (konsultasiId) => {
@@ -153,7 +188,7 @@ const ProsesAudit = () => {
     const visibleTahapanForRow = getVisibleTahapan(konsultasi);
     const completed = visibleTahapanForRow.reduce((acc, tahap) => {
       const tahapState = getTahapState(konsultasi, tahap.no, files);
-      return acc + (isTahapCompleted(tahapState) ? 1 : 0);
+      return acc + (isTahapCompleted(tahapState, tahap.no) ? 1 : 0);
     }, 0);
     const totalTahapan = Math.max(visibleTahapanForRow.length, 1);
 
@@ -191,7 +226,7 @@ const ProsesAudit = () => {
   const maxVisibleTahap = visibleTahapan[visibleTahapan.length - 1]?.no || TOTAL_TAHAP;
   const completedCount = visibleTahapan.reduce((acc, tahap) => {
     const tahapState = getTahapState(selectedKonsultasi, tahap.no, uploadedFiles);
-    return acc + (isTahapCompleted(tahapState) ? 1 : 0);
+    return acc + (isTahapCompleted(tahapState, tahap.no) ? 1 : 0);
   }, 0);
   const pendingCount = Math.max(visibleTahapan.length - completedCount, 0);
   const progressPercent = selectedKonsultasi ? getProgress(selectedKonsultasi.id) : 0;
@@ -235,9 +270,9 @@ const ProsesAudit = () => {
   const isKSPI = userRole === 'manajemen' && currentUser?.sub_role === 'kspi';
   const canUpload = (tahapNo) => {
     if (isKSPI) return false; // KSPI hanya view
-    if (userRole === 'manajemen') return true;
+    if (userRole === 'manajemen') return tahapNo >= 1 && tahapNo <= TOTAL_TAHAP && ![10, 11].includes(tahapNo);
     if (userRole === 'auditee') return TAHAP_AUDITEE_UPLOAD.includes(tahapNo);
-    if (userRole === 'auditor') return tahapNo >= 1 && tahapNo <= TOTAL_TAHAP && !TAHAP_AUDITEE_UPLOAD.includes(tahapNo);
+    if (userRole === 'auditor') return tahapNo >= 1 && tahapNo <= TOTAL_TAHAP && !TAHAP_AUDITEE_UPLOAD.includes(tahapNo) && tahapNo !== TAHAP_REVIEW_LHK;
     return false;
   };
 
@@ -257,6 +292,7 @@ const ProsesAudit = () => {
 
   const getTahapOwnerLabel = (tahapNo) => {
     if (TAHAP_LAPORAN_ONLY.includes(tahapNo)) return 'Menu Laporan';
+    if (tahapNo === TAHAP_REVIEW_LHK) return 'Review Tahap 11';
     if (TAHAP_AUDITEE_UPLOAD.includes(tahapNo)) return 'Auditee';
     return 'Auditor';
   };
@@ -354,6 +390,26 @@ const ProsesAudit = () => {
     }
   };
 
+  const handleTahap11ReviewDecision = async (reviewApproved) => {
+    if (!selectedKonsultasi?.id) return;
+
+    try {
+      setSavingReviewDecision(true);
+      const reviewNote = reviewTahap11Notes[selectedKonsultasi.id] || '';
+      await auditAPI.updateLhkReview(selectedKonsultasi.id, reviewNote, reviewApproved);
+      await fetchProcesses();
+
+      if (reviewApproved) {
+        setSelectedTahap(12);
+      }
+    } catch (error) {
+      console.error('Simpan review tahap 11 gagal:', error);
+      alert(error?.response?.data?.message || 'Gagal menyimpan keputusan review Tahap 11.');
+    } finally {
+      setSavingReviewDecision(false);
+    }
+  };
+
   // Format file size
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes';
@@ -429,10 +485,10 @@ const ProsesAudit = () => {
           <p className={`text-sm md:text-[15px] font-semibold leading-relaxed break-words ${
             userRole === 'auditee' ? 'text-blue-800' : userRole === 'auditor' ? 'text-violet-800' : 'text-emerald-800'
           }`}>
-            {userRole === 'auditee' && 'Auditee hanya dapat upload dokumen Tahap 1 dan Tahap 6, serta hanya dapat melihat file Tahap 1, 2, dan 6. Tahap 10-11 dikelola melalui menu Laporan.'}
-            {userRole === 'auditor' && 'Auditor hanya dapat upload dokumen selain Tahap 1, Tahap 6, Tahap 10, dan Tahap 11. Tahap 10-11 dikelola melalui menu Laporan.'}
+            {userRole === 'auditee' && 'Auditee hanya dapat upload dokumen Tahap 1 dan Tahap 6, serta hanya dapat melihat file Tahap 1, 2, dan 6. Tahap 10 dikelola melalui menu Laporan dan Tahap 11 menggunakan catatan review.'}
+            {userRole === 'auditor' && 'Auditor hanya dapat upload dokumen selain Tahap 1, Tahap 6, Tahap 10, dan Tahap 11. Tahap 10 dikelola di menu Laporan, sedangkan Tahap 11 menggunakan catatan review ON/OFF.'}
             {userRole === 'manajemen' && isKSPI && 'Anda memiliki akses view-only untuk melihat seluruh tahapan dokumen.'}
-            {userRole === 'manajemen' && !isKSPI && 'Anda memiliki akses kelola tahapan 1-13, kecuali Tahap 10-11 yang dikelola melalui menu Laporan.'}
+            {userRole === 'manajemen' && !isKSPI && 'Anda memiliki akses kelola tahapan 1-13, dengan Tahap 10 dikelola di menu Laporan dan Tahap 11 dikelola sebagai review catatan ON/OFF.'}
           </p>
         </div>
       </div>
@@ -644,7 +700,7 @@ const ProsesAudit = () => {
                 <div className={`flex items-start ${isCompactDecisionFlow ? 'justify-center gap-6 md:gap-10 max-w-md mx-auto' : ''}`}>
                   {visibleTahapan.map((tahap, idx) => {
                     const tahapState = getTahapState(selectedKonsultasi, tahap.no, uploadedFiles);
-                    const isDone = isTahapCompleted(tahapState);
+                    const isDone = isTahapCompleted(tahapState, tahap.no);
                     const isRejectedTahap = tahapState === 'rejected';
                     const isAcceptedTahap = tahapState === 'accepted';
                     const isPendingDecisionTahap = tahap.no === TAHAP_KEPUTUSAN && tahapState === 'pending';
@@ -653,7 +709,7 @@ const ProsesAudit = () => {
                     const canUploadThis = canUploadInProcess(tahap.no);
                     const nextTahap = !isLast ? visibleTahapan[idx + 1] : null;
                     const nextState = nextTahap ? getTahapState(selectedKonsultasi, nextTahap.no, uploadedFiles) : 'pending';
-                    const nextDone = nextTahap ? isTahapCompleted(nextState) : false;
+                    const nextDone = nextTahap ? isTahapCompleted(nextState, nextTahap.no) : false;
                     const hasRejectedPath = isRejectedTahap || nextState === 'rejected';
                     return (
                       <div key={tahap.no} className={`flex items-start ${isCompactDecisionFlow ? '' : 'flex-1 last:flex-none'}`}>
@@ -722,14 +778,20 @@ const ProsesAudit = () => {
             {selectedTahap && (() => {
               const tahap = visibleTahapan.find(t => t.no === selectedTahap);
               const tahapState = getTahapState(selectedKonsultasi, selectedTahap, uploadedFiles);
-              const isDone = isTahapCompleted(tahapState);
+              const isDone = isTahapCompleted(tahapState, selectedTahap);
               const isRejectedTahap = tahapState === 'rejected';
               const isAcceptedTahap = tahapState === 'accepted';
               const file = uploadedFiles[selectedTahap];
               const hasFile = !!file;
               const canUploadThis = canUploadInProcess(selectedTahap);
               const canViewThis = canViewInProcess(selectedTahap);
-              const isLaporanManagedTahap = TAHAP_LAPORAN_ONLY.includes(selectedTahap);
+              const canManageReviewTahap11 = userRole !== 'auditee' && !isKSPI;
+              const isTahapDraftLaporan = selectedTahap === TAHAP_DRAFT_LHK;
+              const isTahapReviewLaporan = selectedTahap === TAHAP_REVIEW_LHK;
+              const currentReviewDecision = getLhkReviewDecision(selectedKonsultasi);
+              const isReviewOff = isTahapReviewLaporan && currentReviewDecision === false;
+              const isReviewOn = isTahapReviewLaporan && currentReviewDecision === true;
+              const reviewTahap11Note = reviewTahap11Notes[selectedKonsultasi?.id] || '';
               const showRejectedFileStyle = selectedTahap === TAHAP_KEPUTUSAN && isRejectedTahap;
               if (!tahap) return null;
               return (
@@ -755,7 +817,7 @@ const ProsesAudit = () => {
                           <div className="flex items-center gap-2 flex-wrap">
                             {isRejectedTahap ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
-                                <IconCheckCircle className="w-3 h-3" /> Ditolak
+                                <IconCheckCircle className="w-3 h-3" /> {selectedTahap === TAHAP_REVIEW_LHK ? 'Review OFF' : 'Ditolak'}
                               </span>
                             ) : isAcceptedTahap ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
@@ -815,14 +877,14 @@ const ProsesAudit = () => {
 
                       {/* Right: Upload / File / Locked */}
                       <div className="w-full md:w-80 flex-shrink-0">
-                        {isLaporanManagedTahap ? (
+                        {isTahapDraftLaporan ? (
                           <div className="rounded-xl border border-indigo-200 bg-white p-6 text-center">
                             <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center mx-auto mb-3">
                               <IconFileAlt className="w-5 h-5 text-indigo-500" />
                             </div>
                             <p className="text-sm font-semibold text-slate-700 mb-1">Tahap ini dikelola di menu Laporan</p>
                             <p className="text-[11px] text-slate-400 mb-4">
-                              Tahap 10-11 mengikuti alur Menu Laporan. Saat status masih Draft file bisa diganti/hapus, dan saat sudah Arsip file terkunci.
+                              Tahap 10 adalah Draft LHK. Upload dan pengelolaan file dilakukan melalui menu Laporan, kemudian dilanjutkan ke status Review.
                             </p>
                             {userRole !== 'auditee' ? (
                               <button
@@ -835,6 +897,51 @@ const ProsesAudit = () => {
                             ) : (
                               <p className="text-[11px] font-medium text-slate-500">
                                 Tahap ini dilanjutkan auditor melalui menu Laporan.
+                              </p>
+                            )}
+                          </div>
+                        ) : isTahapReviewLaporan ? (
+                          <div className={`rounded-xl border bg-white p-5 ${isReviewOff ? 'border-red-200' : isReviewOn ? 'border-emerald-200' : 'border-amber-200'}`}>
+                            <p className="text-sm font-semibold text-slate-700 mb-1">Tahap 11: Review (Catatan)</p>
+                            <p className="text-[11px] text-slate-500 mb-3">
+                              Tahap review menggunakan catatan + tombol ON/OFF. ON akan lanjut otomatis ke Tahap 12, OFF tetap di Tahap 11 dan berwarna merah.
+                            </p>
+
+                            {canManageReviewTahap11 ? (
+                              <textarea
+                                value={reviewTahap11Note}
+                                onChange={(e) => setReviewTahap11Notes((prev) => ({ ...prev, [selectedKonsultasi.id]: e.target.value }))}
+                                placeholder="Masukkan catatan review tahap 11..."
+                                className="w-full p-3 border border-slate-200 rounded-lg bg-slate-50 text-slate-700 placeholder-slate-400 text-xs resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300"
+                              />
+                            ) : (
+                              <div className="w-full p-3 border border-slate-200 rounded-lg bg-slate-100 text-slate-600 text-xs min-h-[90px]">
+                                {reviewTahap11Note || 'Belum ada catatan review.'}
+                              </div>
+                            )}
+
+                            {canManageReviewTahap11 ? (
+                              <div className="grid grid-cols-2 gap-2 mt-3">
+                                <button
+                                  type="button"
+                                  onClick={() => handleTahap11ReviewDecision(false)}
+                                  disabled={savingReviewDecision}
+                                  className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${isReviewOff ? 'bg-red-500 text-white border-red-500' : 'bg-white text-red-600 border-red-200 hover:bg-red-50'}`}
+                                >
+                                  OFF
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleTahap11ReviewDecision(true)}
+                                  disabled={savingReviewDecision}
+                                  className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${isReviewOn ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50'}`}
+                                >
+                                  ON
+                                </button>
+                              </div>
+                            ) : (
+                              <p className="text-[11px] text-slate-500 mt-3">
+                                Keputusan ON/OFF review Tahap 11 dikelola oleh auditor/manajemen.
                               </p>
                             )}
                           </div>
