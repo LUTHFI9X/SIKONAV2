@@ -140,6 +140,7 @@ const ProsesAudit = () => {
   const pendingCount = Math.max(visibleTahapan.length - completedCount, 0);
   const progressPercent = selectedKonsultasi ? getProgress(selectedKonsultasi.id) : 0;
   const isSelectedRejectedFlow = selectedKonsultasi ? isRejectedFlow(selectedKonsultasi) : false;
+  const isCompactDecisionFlow = visibleTahapan.length <= 2;
 
   useEffect(() => {
     if (!selectedTahap) return;
@@ -536,7 +537,7 @@ const ProsesAudit = () => {
 
             {/* Progress Bar — single-color, clean */}
             <div className="px-6 pt-5">
-              <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+              <div className={`h-1 bg-slate-100 rounded-full overflow-hidden ${isCompactDecisionFlow ? 'max-w-sm mx-auto' : 'w-full'}`}>
                 <div className={`h-full rounded-full transition-all duration-700 ${progressPercent === 100 ? 'bg-emerald-500' : 'bg-indigo-500'}`} style={{ width: `${progressPercent}%` }}></div>
               </div>
             </div>
@@ -552,7 +553,7 @@ const ProsesAudit = () => {
                   Alur keputusan: jika Tahap 2 ditolak dan dokumen Nota Dinas/NDE diunggah, sistem hanya menampilkan Tahap 1-2. Jika Tahap 2 masih kosong, alur lanjut ke Tahap 3-13.
                 </p>
               )}
-              <div className="flex items-start">
+              <div className={`flex items-start ${isCompactDecisionFlow ? 'justify-center gap-6 md:gap-10 max-w-md mx-auto' : ''}`}>
                 {visibleTahapan.map((tahap, idx) => {
                   const isDone = !!uploadedFiles[tahap.no];
                   const isActive = selectedTahap === tahap.no;
@@ -560,7 +561,7 @@ const ProsesAudit = () => {
                   const canUploadThis = canUploadInProcess(tahap.no);
                   const nextDone = !isLast && !!uploadedFiles[visibleTahapan[idx + 1]?.no];
                   return (
-                    <div key={tahap.no} className="flex items-start flex-1 last:flex-none">
+                    <div key={tahap.no} className={`flex items-start ${isCompactDecisionFlow ? '' : 'flex-1 last:flex-none'}`}>
                       <div className="flex flex-col items-center">
                         <button
                           onClick={() => setSelectedTahap(isActive ? null : tahap.no)}
@@ -589,7 +590,7 @@ const ProsesAudit = () => {
                         </p>
                       </div>
                       {!isLast && (
-                        <div className={`flex-1 h-0.5 mx-1 mt-[19px] rounded-full transition-all duration-300 ${
+                        <div className={`${isCompactDecisionFlow ? 'w-20 md:w-28' : 'flex-1'} h-0.5 mx-1 mt-[19px] rounded-full transition-all duration-300 ${
                           isDone && nextDone ? 'bg-emerald-400' : isDone ? 'bg-emerald-200' : 'bg-slate-200'
                         }`}></div>
                       )}
