@@ -15,7 +15,7 @@ import {
 const ROWS_PER_PAGE = 7;
 
 const STATUS_CONFIG = {
-  review:   { label: 'Sedang Review',   color: 'text-blue-600',    bg: 'bg-blue-50',    border: 'border-blue-200',  dot: 'bg-blue-400',    icon: IconSpinner },
+  draft:    { label: 'Draft',           color: 'text-blue-600',    bg: 'bg-blue-50',    border: 'border-blue-200',  dot: 'bg-blue-400',    icon: IconSpinner },
   arsip:    { label: 'Diarsipkan',      color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-400', icon: IconArchive },
 };
 
@@ -60,7 +60,7 @@ const Laporan = () => {
   const [laporan, setLaporan]           = useState({});
   const [searchQuery, setSearchQuery]   = useState('');
   const [filterBiro, setFilterBiro]     = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all'); // all | belum | review | arsip
+  const [filterStatus, setFilterStatus] = useState('all'); // all | belum | draft | arsip
   const [currentPage, setCurrentPage]   = useState(1);
   const [detailId, setDetailId]         = useState(null);    // slide-over
   const [uploadModal, setUploadModal]   = useState(null);    // upload target id
@@ -139,7 +139,7 @@ const Laporan = () => {
           nomorLHK: '',
           perihal: `Audit ${p.tahun_audit || ''}`.trim(),
           catatan: p.catatan_auditor || '',
-          status: p.status === 'completed' ? 'arsip' : 'review',
+          status: p.status === 'completed' ? 'arsip' : 'draft',
         };
       });
 
@@ -174,7 +174,7 @@ const Laporan = () => {
     if (isAuditor && userBiro) data = data.filter(k => k.kategori === userBiro);
     if (filterBiro !== 'all')   data = data.filter(k => k.kategori === filterBiro);
     if (filterStatus === 'belum')  data = data.filter(k => !laporan[k.id]);
-    if (filterStatus === 'review') data = data.filter(k => laporan[k.id]?.status === 'review');
+    if (filterStatus === 'draft')  data = data.filter(k => laporan[k.id]?.status === 'draft');
     if (filterStatus === 'arsip')  data = data.filter(k => laporan[k.id]?.status === 'arsip');
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -199,9 +199,9 @@ const Laporan = () => {
   const stats = useMemo(() => {
     const relevant = isAuditor && userBiro ? konsultasiProses.filter(k => k.kategori === userBiro) : konsultasiProses;
     const uploaded = relevant.filter(k => laporan[k.id]);
-    const inReview   = relevant.filter(k => laporan[k.id]?.status === 'review');
+    const inDraft    = relevant.filter(k => laporan[k.id]?.status === 'draft');
     const archived   = relevant.filter(k => laporan[k.id]?.status === 'arsip');
-    return { total: relevant.length, uploaded: uploaded.length, belum: relevant.length - uploaded.length, inReview: inReview.length, archived: archived.length };
+    return { total: relevant.length, uploaded: uploaded.length, belum: relevant.length - uploaded.length, inDraft: inDraft.length, archived: archived.length };
   }, [laporan, isAuditor, userBiro]);
 
   /* ── Detail ── */
@@ -241,6 +241,11 @@ const Laporan = () => {
     const existing = laporan[id];
     if (!existing?.tahapNo) {
       alert('Data dokumen tidak valid.');
+      return;
+    }
+
+    if (existing.status === 'arsip') {
+      alert('Dokumen arsip tidak dapat dihapus atau diganti.');
       return;
     }
 
@@ -284,6 +289,10 @@ const Laporan = () => {
 
   const handleSubmitUpload = async () => {
     if (!selectedFile || !uploadModal) return;
+    if (laporan[uploadModal]?.status === 'arsip') {
+      alert('Dokumen arsip tidak dapat dihapus atau diganti.');
+      return;
+    }
     if (!uploadForm.nomorLHK.trim()) { alert('Nomor LHK wajib diisi.'); return; }
     if (!uploadForm.perihal.trim())  { alert('Perihal wajib diisi.'); return; }
     const pad = (n) => String(n).padStart(2, '0');
@@ -312,11 +321,11 @@ const Laporan = () => {
 
   const handleBulkArchive = async () => {
     const targetIds = filteredData
-      .filter((k) => laporan[k.id] && laporan[k.id].status === 'review')
+      .filter((k) => laporan[k.id] && laporan[k.id].status === 'draft')
       .map((k) => k.id);
 
     if (targetIds.length === 0) {
-      alert('Tidak ada draft status review yang dapat diarsipkan pada filter saat ini.');
+      alert('Tidak ada draft yang dapat diarsipkan pada filter saat ini.');
       return;
     }
 
@@ -358,6 +367,10 @@ const Laporan = () => {
 
   /* ── Status Advancement (Auditor) ── */
   const handleAdvanceStatus = async (id) => {
+    if (laporan[id]?.status === 'arsip') {
+      return;
+    }
+
     try {
       await auditAPI.updateStatus(id, 'completed');
       await fetchData();
@@ -476,7 +489,7 @@ const Laporan = () => {
             </div>
             <h1 className="text-xl font-bold tracking-tight">{isKSPI ? 'Monitoring Draft LHK' : 'Kelola Draft LHK'}</h1>
             <p className="text-indigo-200/50 text-[11px] mt-0.5 max-w-md">
-              {isKSPI ? 'Lihat dan download draft LHK dari seluruh biro auditor.' : 'Upload, review, dan arsipkan draft LHK.'}
+              {isKSPI ? 'Lihat dan download draft LHK dari seluruh biro auditor.' : 'Upload, kelola draft, dan arsipkan LHK.'}
             </p>
           </div>
 
@@ -484,7 +497,7 @@ const Laporan = () => {
           <div className="flex items-center gap-2 flex-shrink-0">
             {[
               { label: 'Total',    value: stats.total,    color: 'text-white' },
-              { label: 'Review',   value: stats.inReview,  color: 'text-blue-300' },
+              { label: 'Draft',    value: stats.inDraft,   color: 'text-blue-300' },
               { label: 'Arsip',    value: stats.archived,  color: 'text-emerald-300' },
             ].map((s, i) => (
               <div key={i} className="text-center px-3.5 py-1.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
@@ -501,7 +514,7 @@ const Laporan = () => {
         {[
           { key: 'all',    label: 'Semua',         value: stats.total,    icon: <IconFileAlt className="w-4 h-4" />,   bg: 'bg-indigo-50',  ic: 'text-indigo-500',  ring: 'ring-indigo-100 border-indigo-300' },
           { key: 'belum',  label: 'Belum Upload',  value: stats.belum,    icon: <IconClock className="w-4 h-4" />,     bg: 'bg-slate-50',   ic: 'text-slate-500',   ring: 'ring-slate-100 border-slate-300' },
-          { key: 'review', label: 'Sedang Review', value: stats.inReview, icon: <IconSpinner className="w-4 h-4" />,   bg: 'bg-blue-50',    ic: 'text-blue-500',    ring: 'ring-blue-100 border-blue-300' },
+          { key: 'draft',  label: 'Draft',         value: stats.inDraft,  icon: <IconSpinner className="w-4 h-4" />,   bg: 'bg-blue-50',    ic: 'text-blue-500',    ring: 'ring-blue-100 border-blue-300' },
           { key: 'arsip',  label: 'Diarsipkan',    value: stats.archived, icon: <IconArchive className="w-4 h-4" />,   bg: 'bg-emerald-50', ic: 'text-emerald-500', ring: 'ring-emerald-100 border-emerald-300' },
         ].map((f) => (
           <button key={f.key} onClick={() => setStatus(f.key)}
@@ -549,7 +562,7 @@ const Laporan = () => {
               onClick={handleBulkArchive}
               className="px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold hover:bg-emerald-100 transition-colors"
             >
-              Arsipkan Semua Review
+              Arsipkan Semua Draft
             </button>
           )}
           <span className="text-[11px] text-slate-400 font-medium ml-auto">{filteredData.length} konsultasi</span>
@@ -698,7 +711,7 @@ const Laporan = () => {
         {isKSPI && (
           <div className="px-5 py-2.5 bg-indigo-50 border-t border-indigo-200/60 flex items-center gap-2">
             <IconExclamationCircle className="w-4 h-4 text-indigo-400 flex-shrink-0" />
-            <p className="text-[10px] text-indigo-500 font-medium">Mode View-Only — Upload, review, dan arsip hanya dapat dilakukan oleh auditor biro terkait.</p>
+            <p className="text-[10px] text-indigo-500 font-medium">Mode View-Only — Upload, kelola draft, dan arsip hanya dapat dilakukan oleh auditor biro terkait.</p>
           </div>
         )}
       </div>
@@ -747,8 +760,8 @@ const Laporan = () => {
                         <div>
                           <span className={`text-sm font-bold ${cfg.color}`}>{cfg.label}</span>
                           <p className="text-[10px] text-slate-500 mt-0.5">
-                            {detailLaporan.status === 'review' && 'Sedang dalam proses review'}
-                            {detailLaporan.status === 'arsip' && 'Dokumen telah diarsipkan'}
+                            {detailLaporan.status === 'draft' && 'Masih berstatus draft. Dokumen masih dapat diganti atau dihapus.'}
+                            {detailLaporan.status === 'arsip' && 'Dokumen telah diarsipkan dan tidak dapat dihapus atau diganti.'}
                           </p>
                         </div>
                       </div>
@@ -757,8 +770,8 @@ const Laporan = () => {
 
                   {/* Status Flow Indicator */}
                   <div className="flex items-center gap-1 px-2">
-                    {['review', 'arsip'].map((step, i) => {
-                      const stepOrder = { review: 0, arsip: 1 };
+                    {['draft', 'arsip'].map((step, i) => {
+                      const stepOrder = { draft: 0, arsip: 1 };
                       const currentOrder = stepOrder[detailLaporan.status] ?? 0;
                       const isCompleted = stepOrder[step] <= currentOrder;
                       const isCurrent = step === detailLaporan.status;
@@ -775,7 +788,7 @@ const Laporan = () => {
                               {isCompleted && !isCurrent ? <IconCheckCircle className="w-4 h-4" /> : i + 1}
                             </div>
                             <p className={`text-[9px] font-semibold mt-1.5 ${isCompleted ? 'text-slate-700' : 'text-slate-300'}`}>
-                              {step === 'review' ? 'Review' : 'Arsip'}
+                              {step === 'draft' ? 'Draft' : 'Arsip'}
                             </p>
                           </div>
                           {i < 1 && (
@@ -862,7 +875,7 @@ const Laporan = () => {
                   </button>
                 </div>
                 {/* Row 2 — Auditor actions (Ganti · Hapus · Arsipkan) */}
-                {isAuditor && detailLaporan.status === 'review' && (
+                {isAuditor && detailLaporan.status === 'draft' && (
                   <div className="flex items-center gap-2">
                     <button onClick={() => { setDetailId(null); openUploadModal(detailId); }} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-amber-50 text-amber-600 text-sm font-semibold rounded-xl hover:bg-amber-100 border border-amber-200/60 transition-colors">
                       <IconUpload className="w-4 h-4" /> Ganti

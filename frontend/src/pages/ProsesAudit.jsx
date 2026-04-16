@@ -19,8 +19,11 @@ const ProsesAudit = () => {
   const userName = currentUser?.name || '';
   const TOTAL_TAHAP = TAHAPAN_AUDIT.length;
   const TAHAP_DRAFT_LHK = 10;
+  const TAHAP_REVIEW_LHK = 11;
   const TAHAP_KEPUTUSAN = 2;
   const TAHAP_AUDITEE_UPLOAD = [1, 6];
+  const TAHAP_AUDITEE_VIEW = [1, 2, 6];
+  const TAHAP_LAPORAN_ONLY = [TAHAP_DRAFT_LHK, TAHAP_REVIEW_LHK];
   const [konsultasiData, setKonsultasiData] = useState([]);
 
   // State untuk selected konsultasi
@@ -125,6 +128,10 @@ const ProsesAudit = () => {
   }, [acceptedDecisions, isRejectedFlow]);
 
   const getTahapState = useCallback((konsultasi, tahapNo, files) => {
+    if (tahapNo === TAHAP_REVIEW_LHK && konsultasi?.statusRaw === 'completed') {
+      return 'done';
+    }
+
     if (tahapNo !== TAHAP_KEPUTUSAN) {
       return files[tahapNo] ? 'done' : 'pending';
     }
@@ -133,7 +140,7 @@ const ProsesAudit = () => {
     if (isAcceptedFlow(konsultasi)) return 'accepted';
 
     return files[tahapNo] ? 'done' : 'pending';
-  }, [TAHAP_KEPUTUSAN, isRejectedFlow, isAcceptedFlow]);
+  }, [TAHAP_KEPUTUSAN, TAHAP_REVIEW_LHK, isRejectedFlow, isAcceptedFlow]);
 
   const isTahapCompleted = (state) => state !== 'pending';
 
@@ -234,15 +241,32 @@ const ProsesAudit = () => {
     return false;
   };
 
-  const canUploadInProcess = (tahapNo) => canUpload(tahapNo) && tahapNo !== TAHAP_DRAFT_LHK;
+  const canUploadInProcess = (tahapNo) => canUpload(tahapNo) && !TAHAP_LAPORAN_ONLY.includes(tahapNo);
+
+  const canViewInProcess = (tahapNo) => {
+    if (TAHAP_LAPORAN_ONLY.includes(tahapNo)) {
+      return false;
+    }
+
+    if (userRole === 'auditee') {
+      return TAHAP_AUDITEE_VIEW.includes(tahapNo);
+    }
+
+    return true;
+  };
+
   const getTahapOwnerLabel = (tahapNo) => {
-    if (tahapNo === TAHAP_DRAFT_LHK) return 'Menu Laporan';
+    if (TAHAP_LAPORAN_ONLY.includes(tahapNo)) return 'Menu Laporan';
     if (TAHAP_AUDITEE_UPLOAD.includes(tahapNo)) return 'Auditee';
     return 'Auditor';
   };
 
   const handleViewFile = async (tahapNo) => {
     if (!selectedKonsultasi) return;
+    if (!canViewInProcess(tahapNo)) {
+      alert('Anda tidak memiliki akses melihat dokumen pada tahap ini.');
+      return;
+    }
 
     try {
       const response = await auditAPI.downloadDokumen(selectedKonsultasi.id, tahapNo);
@@ -405,10 +429,10 @@ const ProsesAudit = () => {
           <p className={`text-sm md:text-[15px] font-semibold leading-relaxed break-words ${
             userRole === 'auditee' ? 'text-blue-800' : userRole === 'auditor' ? 'text-violet-800' : 'text-emerald-800'
           }`}>
-            {userRole === 'auditee' && 'Auditee hanya dapat upload dokumen Tahap 1 dan Tahap 6. Tahap 10 dikelola melalui menu Laporan.'}
-            {userRole === 'auditor' && 'Auditor hanya dapat upload dokumen selain Tahap 1, Tahap 6, dan Tahap 10. Tahap 10 dikelola melalui menu Laporan.'}
+            {userRole === 'auditee' && 'Auditee hanya dapat upload dokumen Tahap 1 dan Tahap 6, serta hanya dapat melihat file Tahap 1, 2, dan 6. Tahap 10-11 dikelola melalui menu Laporan.'}
+            {userRole === 'auditor' && 'Auditor hanya dapat upload dokumen selain Tahap 1, Tahap 6, Tahap 10, dan Tahap 11. Tahap 10-11 dikelola melalui menu Laporan.'}
             {userRole === 'manajemen' && isKSPI && 'Anda memiliki akses view-only untuk melihat seluruh tahapan dokumen.'}
-            {userRole === 'manajemen' && !isKSPI && 'Anda memiliki akses kelola tahapan 1-13, kecuali Tahap 10 yang dikelola melalui menu Laporan.'}
+            {userRole === 'manajemen' && !isKSPI && 'Anda memiliki akses kelola tahapan 1-13, kecuali Tahap 10-11 yang dikelola melalui menu Laporan.'}
           </p>
         </div>
       </div>
@@ -704,6 +728,8 @@ const ProsesAudit = () => {
               const file = uploadedFiles[selectedTahap];
               const hasFile = !!file;
               const canUploadThis = canUploadInProcess(selectedTahap);
+              const canViewThis = canViewInProcess(selectedTahap);
+              const isLaporanManagedTahap = TAHAP_LAPORAN_ONLY.includes(selectedTahap);
               const showRejectedFileStyle = selectedTahap === TAHAP_KEPUTUSAN && isRejectedTahap;
               if (!tahap) return null;
               return (
@@ -753,7 +779,7 @@ const ProsesAudit = () => {
                           </div>
                         </div>
                         {/* Navigation */}
-                        <div className="flex items-center gap-2 mt-5 ml-[56px]">
+                        <div className="flex items-center gap-2 mt-5 ml-[56px] flex-wrap">
                           <button
                             onClick={() => setSelectedTahap(prev => Math.max(1, prev - 1))}
                             disabled={selectedTahap === 1 || selectedTahap === visibleTahapan[0]?.no}
@@ -761,19 +787,7 @@ const ProsesAudit = () => {
                           >
                             <IconArrowLeft className="w-3 h-3" /> Sebelumnya
                           </button>
-                          {selectedTahap !== TAHAP_KEPUTUSAN && (
-                            <button
-                              onClick={() => setSelectedTahap(prev => Math.min(maxVisibleTahap, prev + 1))}
-                              disabled={selectedTahap === maxVisibleTahap}
-                              className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
-                            >
-                              Selanjutnya <IconArrowLeft className="w-3 h-3 rotate-180" />
-                            </button>
-                          )}
-                        </div>
-
-                        {selectedTahap === TAHAP_KEPUTUSAN && !isSelectedRejectedFlow && !isAcceptedTahap && canUploadThis && (
-                          <div className="ml-[56px] mt-3">
+                          {selectedTahap === TAHAP_KEPUTUSAN && !isSelectedRejectedFlow && !isAcceptedTahap && canUploadThis && (
                             <button
                               type="button"
                               onClick={() => {
@@ -786,26 +800,43 @@ const ProsesAudit = () => {
                             >
                               Konsultasi Diterima, Lanjut Membuat Surat Tugas
                             </button>
-                          </div>
-                        )}
+                          )}
+                          {selectedTahap !== TAHAP_KEPUTUSAN && (
+                            <button
+                              onClick={() => setSelectedTahap(prev => Math.min(maxVisibleTahap, prev + 1))}
+                              disabled={selectedTahap === maxVisibleTahap}
+                              className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
+                            >
+                              Selanjutnya <IconArrowLeft className="w-3 h-3 rotate-180" />
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       {/* Right: Upload / File / Locked */}
                       <div className="w-full md:w-80 flex-shrink-0">
-                        {selectedTahap === TAHAP_DRAFT_LHK && !hasFile ? (
+                        {isLaporanManagedTahap ? (
                           <div className="rounded-xl border border-indigo-200 bg-white p-6 text-center">
                             <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center mx-auto mb-3">
                               <IconFileAlt className="w-5 h-5 text-indigo-500" />
                             </div>
                             <p className="text-sm font-semibold text-slate-700 mb-1">Tahap ini dikelola di menu Laporan</p>
-                            <p className="text-[11px] text-slate-400 mb-4">Upload Draft Laporan Hasil Konsultasi dilakukan melalui menu khusus Laporan.</p>
-                            <button
-                              type="button"
-                              onClick={() => navigate('/laporan')}
-                              className="px-3.5 py-2 bg-indigo-500 text-white rounded-lg text-xs font-bold hover:bg-indigo-600 transition-all"
-                            >
-                              Buka Menu Laporan
-                            </button>
+                            <p className="text-[11px] text-slate-400 mb-4">
+                              Tahap 10-11 mengikuti alur Menu Laporan. Saat status masih Draft file bisa diganti/hapus, dan saat sudah Arsip file terkunci.
+                            </p>
+                            {userRole !== 'auditee' ? (
+                              <button
+                                type="button"
+                                onClick={() => navigate('/laporan')}
+                                className="px-3.5 py-2 bg-indigo-500 text-white rounded-lg text-xs font-bold hover:bg-indigo-600 transition-all"
+                              >
+                                Buka Menu Laporan
+                              </button>
+                            ) : (
+                              <p className="text-[11px] font-medium text-slate-500">
+                                Tahap ini dilanjutkan auditor melalui menu Laporan.
+                              </p>
+                            )}
                           </div>
                         ) : selectedTahap === TAHAP_KEPUTUSAN && isAcceptedTahap && !hasFile ? (
                           <div className="rounded-xl border border-emerald-200 bg-white p-6 text-center">
@@ -829,23 +860,35 @@ const ProsesAudit = () => {
                                 <IconFileAlt className={`w-5 h-5 ${showRejectedFileStyle ? 'text-red-600' : 'text-emerald-600'}`} />
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="text-sm font-semibold text-slate-800 truncate" title={file.name}>{file.name}</p>
-                                <p className="text-[11px] text-slate-400 mt-0.5">{file.size}</p>
+                                <p className="text-sm font-semibold text-slate-800 truncate" title={canViewThis || canUploadThis ? file.name : 'Dokumen Terbatas'}>
+                                  {canViewThis || canUploadThis ? file.name : 'Dokumen Terbatas'}
+                                </p>
+                                <p className="text-[11px] text-slate-400 mt-0.5">
+                                  {canViewThis || canUploadThis ? file.size : 'Akses file dibatasi'}
+                                </p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => handleViewFile(selectedTahap)}
-                                className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-600 hover:bg-white transition-all flex items-center justify-center gap-1.5"
-                              >
-                                <IconEye className="w-3.5 h-3.5" /> Lihat File
-                              </button>
-                              {canUploadThis && (
-                                <button onClick={() => handleFileDelete(selectedTahap)} className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-red-500 hover:bg-red-50 hover:border-red-200 transition-all flex items-center gap-1.5">
-                                  <IconTrash className="w-3.5 h-3.5" /> Hapus
-                                </button>
-                              )}
-                            </div>
+                            {(canViewThis || canUploadThis) ? (
+                              <div className="flex items-center gap-2">
+                                {canViewThis && (
+                                  <button
+                                    onClick={() => handleViewFile(selectedTahap)}
+                                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-600 hover:bg-white transition-all flex items-center justify-center gap-1.5"
+                                  >
+                                    <IconEye className="w-3.5 h-3.5" /> Lihat File
+                                  </button>
+                                )}
+                                {canUploadThis && (
+                                  <button onClick={() => handleFileDelete(selectedTahap)} className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-red-500 hover:bg-red-50 hover:border-red-200 transition-all flex items-center gap-1.5">
+                                    <IconTrash className="w-3.5 h-3.5" /> Hapus
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-[11px] text-slate-400">
+                                Dokumen tersedia, tetapi akses lihat file pada tahap ini dibatasi untuk role Anda.
+                              </p>
+                            )}
                           </div>
                         ) : canUploadThis ? (
                           <div

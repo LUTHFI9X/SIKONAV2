@@ -273,6 +273,10 @@ class AuditProcessController extends Controller
             return response()->json(['message' => 'Anda tidak memiliki akses ke dokumen ini.'], 403);
         }
 
+        if (!$this->canViewTahap($request->user(), $tahapNo)) {
+            return response()->json(['message' => 'Anda tidak memiliki izin melihat dokumen pada tahap ini.'], 403);
+        }
+
         $doc = $auditProcess->documents()->where('tahap_no', $tahapNo)->first();
         if (!$doc) {
             return response()->json(['message' => 'Dokumen tidak ditemukan.'], 404);
@@ -391,7 +395,9 @@ class AuditProcessController extends Controller
         }
 
         if ($user->role === 'manajemen') {
-            return true;
+            return $tahapNo >= 1
+                && $tahapNo <= self::MAX_TAHAP_KONSULTASI
+                && !in_array($tahapNo, [10, 11], true);
         }
 
         if ($user->role === 'auditee') {
@@ -399,10 +405,21 @@ class AuditProcessController extends Controller
         }
 
         if ($user->role === 'auditor') {
-            return $tahapNo >= 1 && $tahapNo <= self::MAX_TAHAP_KONSULTASI && !in_array($tahapNo, [1, 6], true);
+            return $tahapNo >= 1
+                && $tahapNo <= self::MAX_TAHAP_KONSULTASI
+                && !in_array($tahapNo, [1, 6, 11], true);
         }
 
         return false;
+    }
+
+    private function canViewTahap(User $user, int $tahapNo): bool
+    {
+        if ($user->role === 'auditee') {
+            return in_array($tahapNo, [1, 2, 6], true);
+        }
+
+        return $tahapNo >= 1 && $tahapNo <= self::MAX_TAHAP_KONSULTASI;
     }
 
     private function canAccessAuditProcess(User $user, AuditProcess $auditProcess): bool
