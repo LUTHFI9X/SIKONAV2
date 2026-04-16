@@ -8,14 +8,13 @@ import {
   IconUserShield, IconBriefcase, IconLock, IconArrowRight, IconWave,
   IconCheckCircle, IconEye
 } from '../components/Icons';
-import { SikonaLogoHorizontal, SikonaWordmark } from '../components/SikonaLogo';
 
 const Login = () => {
   const baseUrl = import.meta.env.BASE_URL || '/';
   const peruriLogoPng = `${baseUrl}images/logo-peruri.png`;
   const spiMarkLogo = `${baseUrl}images/logo-spi-mark.png`;
-  const sikonaLogoSvg = `${baseUrl}images/logo_final_exact_palette.svg`;
-  const sikonaLogoFallback = `${baseUrl}images/SiKONA_logo_transparent.png`;
+  const sikonaLogoPng = `${baseUrl}images/SiKONA_logo_transparent.png`;
+  const sikonaIconPng = `${baseUrl}images/SiKONA_icon_transparent.png`;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -140,16 +139,15 @@ const Login = () => {
               <div className="relative z-10">
                 <div className="flex flex-col items-center">
                   <img
-                    src={sikonaLogoSvg}
+                    src={sikonaLogoPng}
                     alt="SiKONA"
                     className="w-[340px] max-w-[72vw] h-auto object-contain drop-shadow-2xl"
                     onError={(e) => {
                       e.currentTarget.onerror = null;
-                      e.currentTarget.src = sikonaLogoFallback;
+                      e.currentTarget.src = sikonaIconPng;
                     }}
                   />
                   <div className="mt-2 text-center">
-                    <SikonaWordmark size="text-5xl" />
                     <p className="text-sm font-semibold text-slate-100 uppercase tracking-[0.3em] mt-1">Sistem Konsultasi Audit</p>
                   </div>
                 </div>
@@ -184,8 +182,21 @@ const Login = () => {
       {/* ═══ RIGHT PANEL — LOGIN FORM ═══ */}
       <div className="login-right-panel login-enterprise-surface w-full md:w-[540px] lg:w-[560px] bg-gradient-to-b from-slate-100 via-white to-slate-100 flex flex-col relative overflow-y-auto">
         {/* Mobile header */}
-        <div className="login-mobile-header md:hidden p-4 sm:p-5 text-center">
-          <SikonaLogoHorizontal iconSize={46} className="justify-center" />
+        <div className="login-mobile-header md:hidden p-4 sm:p-5">
+          <div className="flex items-center justify-center gap-3">
+            <img src={peruriLogoPng} alt="PERURI" className="h-8 w-auto object-contain flex-shrink-0" />
+            <div className="w-px h-9 bg-gradient-to-b from-transparent via-violet-200/60 to-transparent flex-shrink-0"></div>
+            <div className="min-w-0">
+              <img
+                src={sikonaLogoPng}
+                alt="SiKONA"
+                className="h-9 w-auto object-contain"
+              />
+              <p className="text-[9px] font-semibold text-violet-100/90 uppercase tracking-[0.14em] mt-0.5 whitespace-nowrap">
+                Sistem Konsultasi Audit
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="login-form-wrap relative z-10 flex-1 flex items-start md:items-start 2xl:items-center justify-center p-3 sm:p-5 lg:p-8">
@@ -203,20 +214,13 @@ const Login = () => {
                 <div className="w-px h-12 bg-gradient-to-b from-transparent via-slate-300 to-transparent flex-shrink-0"></div>
                 
                 {/* SiKONA Brand */}
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="min-w-0">
                   <img
-                    src={sikonaLogoSvg}
+                    src={sikonaLogoPng}
                     alt="SiKONA"
-                    className="h-12 w-auto object-contain flex-shrink-0"
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = sikonaLogoFallback;
-                    }}
+                    className="h-12 w-auto object-contain"
                   />
-                  <div>
-                    <SikonaWordmark size="text-xl" dark={true} />
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mt-0.5">Sistem Konsultasi Audit</p>
-                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mt-0.5">Sistem Konsultasi Audit</p>
                 </div>
               </div>
 
