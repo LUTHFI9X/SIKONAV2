@@ -6,6 +6,35 @@ use Illuminate\Database\Eloquent\Model;
 
 class AuditProcess extends Model
 {
+    private const TAHAP_LABELS = [
+        1 => 'Permintaan Konsultasi dari Klien',
+        2 => 'Identifikasi Permintaan Konsultasi dari Biro Candit',
+        3 => 'Pembuatan Surat Tugas (Diterima)',
+        4 => 'Entry Meeting',
+        5 => 'Permintaan Dokumen Konsultasi',
+        6 => 'Pemenuhan Dokumen Konsultasi',
+        7 => 'Analisa Data',
+        8 => 'Review KKA',
+        9 => 'Exit Meeting',
+        10 => 'Penyusunan Draft LHK',
+        11 => 'Review Draft LHK',
+        12 => 'Finalisasi LHK',
+        13 => 'Distribusi LHK',
+    ];
+
+    private const TAHAP_DB_FIELD_MAP = [
+        1 => 'tahap_1_permintaan',
+        2 => 'tahap_2_telaah',
+        3 => 'tahap_3_surat_tugas',
+        4 => 'tahap_4_entry_meeting',
+        5 => 'tahap_5_permintaan_dokumen',
+        6 => 'tahap_6_pemenuhan_dokumen',
+        7 => 'tahap_7_analisa',
+        8 => 'tahap_8_exit_meeting',
+        9 => 'tahap_9_draft_lhk',
+        10 => 'tahap_10_finalisasi',
+    ];
+
     protected $fillable = [
         'conversation_id',
         'auditee_id',
@@ -54,65 +83,65 @@ class AuditProcess extends Model
 
     public function getTahapanAttribute(): array
     {
-        $tahap9Status = $this->resolveTahap9Status();
-        $tahap10Status = $this->resolveTahap10Status();
+        $items = [];
+        foreach (self::TAHAP_LABELS as $no => $nama) {
+            $items[] = [
+                'no' => $no,
+                'nama' => $nama,
+                'status' => $this->resolveTahapStatus($no),
+            ];
+        }
 
-        return [
-            ['no' => 1, 'nama' => 'Permintaan Audit', 'status' => $this->tahap_1_permintaan],
-            ['no' => 2, 'nama' => 'Telaah Pendahuluan', 'status' => $this->tahap_2_telaah],
-            ['no' => 3, 'nama' => 'Surat Tugas', 'status' => $this->tahap_3_surat_tugas],
-            ['no' => 4, 'nama' => 'Entry Meeting', 'status' => $this->tahap_4_entry_meeting],
-            ['no' => 5, 'nama' => 'Permintaan Dokumen', 'status' => $this->tahap_5_permintaan_dokumen],
-            ['no' => 6, 'nama' => 'Pemenuhan Dokumen', 'status' => $this->tahap_6_pemenuhan_dokumen],
-            ['no' => 7, 'nama' => 'Analisa Bukti', 'status' => $this->tahap_7_analisa],
-            ['no' => 8, 'nama' => 'Exit Meeting', 'status' => $this->tahap_8_exit_meeting],
-            ['no' => 9, 'nama' => 'Draft LHK', 'status' => $tahap9Status],
-            ['no' => 10, 'nama' => 'Finalisasi', 'status' => $tahap10Status],
-        ];
+        return $items;
     }
 
     public function getProgressPercentageAttribute(): int
     {
-        $tahap9Status = $this->resolveTahap9Status();
-        $tahap10Status = $this->resolveTahap10Status();
+        $targetTahapan = $this->status === 'cancelled'
+            ? [1, 2]
+            : array_keys(self::TAHAP_LABELS);
 
         $completed = 0;
-        $tahapan = [
-            $this->tahap_1_permintaan, $this->tahap_2_telaah, $this->tahap_3_surat_tugas,
-            $this->tahap_4_entry_meeting, $this->tahap_5_permintaan_dokumen, $this->tahap_6_pemenuhan_dokumen,
-            $this->tahap_7_analisa, $this->tahap_8_exit_meeting, $tahap9Status, $tahap10Status,
-        ];
-        
-        foreach ($tahapan as $status) {
-            if ($status === 'selesai') $completed++;
+        foreach ($targetTahapan as $tahapNo) {
+            if ($this->resolveTahapStatus($tahapNo) === 'selesai') {
+                $completed++;
+            }
         }
-        
-        return (int) round(($completed / 10) * 100);
+
+        $denominator = max(count($targetTahapan), 1);
+
+        return (int) round(($completed / $denominator) * 100);
     }
 
-    private function resolveTahap9Status(): string
+    private function resolveTahapStatus(int $tahapNo): string
     {
-        if ($this->tahap_9_draft_lhk === 'selesai') {
+        if ($this->status === 'cancelled' && $tahapNo === 2) {
             return 'selesai';
         }
 
-        $hasDraftDoc = false;
+        if ($this->status === 'completed' && $tahapNo === 13) {
+            return 'selesai';
+        }
+
+        if ($this->hasTahapDocument($tahapNo)) {
+            return 'selesai';
+        }
+
+        $field = self::TAHAP_DB_FIELD_MAP[$tahapNo] ?? null;
+        if ($field) {
+            return $this->{$field} ?: 'belum';
+        }
+
+        return 'belum';
+    }
+
+    private function hasTahapDocument(int $tahapNo): bool
+    {
         if ($this->relationLoaded('documents')) {
-            $hasDraftDoc = $this->documents->contains(fn ($doc) => (int) $doc->tahap_no === 9);
-        } else {
-            $hasDraftDoc = $this->documents()->where('tahap_no', 9)->exists();
+            return $this->documents->contains(fn ($doc) => (int) $doc->tahap_no === $tahapNo);
         }
 
-        return $hasDraftDoc ? 'selesai' : ($this->tahap_9_draft_lhk ?: 'belum');
-    }
-
-    private function resolveTahap10Status(): string
-    {
-        if ($this->status === 'completed') {
-            return 'selesai';
-        }
-
-        return $this->tahap_10_finalisasi ?: 'belum';
+        return $this->documents()->where('tahap_no', $tahapNo)->exists();
     }
 
     protected $appends = ['tahapan', 'progress_percentage'];

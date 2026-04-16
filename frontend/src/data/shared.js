@@ -41,18 +41,21 @@ export const BIRO_LIST = [
 export const getBiroById = (id) => BIRO_LIST.find(b => b.id === id);
 export const getBiroByName = (name) => BIRO_LIST.find(b => b.name === name);
 
-// ─── 10 Tahapan Proses Konsultasi Audit ───
+// ─── 13 Tahapan Proses Konsultasi Audit ───
 export const TAHAPAN_AUDIT = [
-  { no: 1, tahapan: 'Permintaan Konsultasi', detail: 'Auditee mengajukan permintaan ke Ka SPI', dokumen: 'NDE Permintaan' },
-  { no: 2, tahapan: 'Telaah & Identifikasi', detail: 'Biro Candit menelaah dan menentukan kelayakan', dokumen: 'Catatan Telaah' },
-  { no: 3, tahapan: 'Surat Tugas', detail: 'Penerbitan Surat Tugas Konsultasi', dokumen: 'Surat Tugas' },
-  { no: 4, tahapan: 'Entry Meeting', detail: 'Pembahasan ruang lingkup & kesepakatan', dokumen: 'Risalah Entry Meeting' },
-  { no: 5, tahapan: 'Permintaan Dokumen', detail: 'Auditor meminta dokumen pendukung', dokumen: 'Nota Dinas' },
-  { no: 6, tahapan: 'Pemenuhan Dokumen', detail: 'Auditee mengunggah dokumen', dokumen: 'Dokumen Pendukung' },
-  { no: 7, tahapan: 'Analisa & Review', detail: 'Analisa data & kertas kerja', dokumen: 'Kertas Kerja' },
-  { no: 8, tahapan: 'Exit Meeting', detail: 'Pembahasan rekomendasi', dokumen: 'Risalah Exit Meeting' },
-  { no: 9, tahapan: 'Draft LHK & Exsum', detail: 'Penyusunan laporan hasil konsultasi', dokumen: 'Draft LHK' },
-  { no: 10, tahapan: 'Finalisasi & Distribusi', detail: 'Penandatanganan & distribusi LHK', dokumen: 'LHK Final' },
+  { no: 1, tahapan: 'Permintaan Konsultasi dari Klien', detail: 'Auditee mengajukan konsultasi melalui NDE Klien.', dokumen: 'NDE Klien' },
+  { no: 2, tahapan: 'Identifikasi Permintaan Konsultasi dari Biro Candit', detail: 'Biro Candit melakukan identifikasi melalui NDE. Jika ditolak, terbit Nota Dinas dan proses berhenti di tahap ini.', dokumen: 'NDE / Nota Dinas (Ditolak)' },
+  { no: 3, tahapan: 'Pembuatan Surat Tugas (Diterima)', detail: 'Jika permintaan diterima, diterbitkan Surat Tugas (ST).', dokumen: 'Surat Tugas (ST)' },
+  { no: 4, tahapan: 'Entry Meeting', detail: 'Pelaksanaan entry meeting dan penyusunan notulen.', dokumen: 'Notulen Entry Meeting' },
+  { no: 5, tahapan: 'Permintaan Dokumen Konsultasi', detail: 'SPI mengirim permintaan dokumen konsultasi.', dokumen: 'NDE SPI' },
+  { no: 6, tahapan: 'Pemenuhan Dokumen Konsultasi', detail: 'Auditee memenuhi permintaan dokumen konsultasi.', dokumen: 'NDE Klien' },
+  { no: 7, tahapan: 'Analisa Data', detail: 'Tim melakukan analisa data konsultasi dan penyusunan KKA.', dokumen: 'KKA' },
+  { no: 8, tahapan: 'Review KKA', detail: 'Supervisi atas KKA dilakukan sebelum lanjut.', dokumen: 'Dokumen Supervisi KKA' },
+  { no: 9, tahapan: 'Exit Meeting', detail: 'Pelaksanaan exit meeting dan penyusunan notulen.', dokumen: 'Notulen Exit Meeting' },
+  { no: 10, tahapan: 'Penyusunan Draft LHK', detail: 'Draft LHK disusun untuk dibahas pada tahap review.', dokumen: 'Draft LHK' },
+  { no: 11, tahapan: 'Review Draft LHK', detail: 'Draft LHK direview dan disupervisi.', dokumen: 'Dokumen Supervisi LHK' },
+  { no: 12, tahapan: 'Finalisasi LHK', detail: 'LHK difinalisasi sesuai hasil review.', dokumen: 'Dokumen LHK' },
+  { no: 13, tahapan: 'Distribusi LHK', detail: 'LHK didistribusikan melalui NDE dan e-mail.', dokumen: 'NDE dan E-mail' },
 ];
 
 // ─── Data Profil SPI ───

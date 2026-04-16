@@ -33,7 +33,7 @@ const ChevronRight = ({ className }) => (
    COMPONENT
    ═══════════════════════════════════════ */
 const Laporan = () => {
-  const DRAFT_LHK_TAHAP = 9;
+  const DRAFT_LHK_TAHAP = 10;
   const MAX_UPLOAD_MB = 50;
   const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
   const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'heic', 'heif'];

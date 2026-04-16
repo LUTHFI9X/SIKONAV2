@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Storage;
 
 class AuditProcessController extends Controller
 {
+    private const MAX_TAHAP_KONSULTASI = 13;
+
     private function canManageAudit(User $user): bool
     {
         if ($user->role === 'auditor') {
@@ -139,7 +141,7 @@ class AuditProcessController extends Controller
         }
 
         $request->validate([
-            'tahap' => 'required|integer|min:1|max:10',
+            'tahap' => 'required|integer|min:1|max:' . self::MAX_TAHAP_KONSULTASI,
             'status' => 'required|in:belum,proses,selesai',
         ]);
 
@@ -150,6 +152,12 @@ class AuditProcessController extends Controller
         }
 
         $tahapField = 'tahap_' . $request->tahap . '_' . $this->getTahapName($request->tahap);
+        if (!$tahapField || !in_array($tahapField, $auditProcess->getFillable(), true)) {
+            return response()->json([
+                'message' => 'Perubahan status manual untuk tahap ini belum tersedia. Gunakan upload dokumen untuk menandai progres.',
+            ], 422);
+        }
+
         $auditProcess->update([$tahapField => $request->status]);
 
         return response()->json(['audit_process' => $auditProcess->fresh()]);
@@ -172,17 +180,11 @@ class AuditProcessController extends Controller
         }
 
         $request->validate([
-            'tahap_no' => 'required|integer|min:1|max:10',
+            'tahap_no' => 'required|integer|min:1|max:' . self::MAX_TAHAP_KONSULTASI,
             'dokumen' => 'required|file|max:51200', // 50MB max
         ]);
 
         $tahapNo = (int) $request->tahap_no;
-
-        if ($tahapNo === 10) {
-            return response()->json([
-                'message' => 'Tahap 10 terisi otomatis saat proses diarsipkan. Upload manual tidak diperlukan.',
-            ], 422);
-        }
 
         if (!$this->canUploadTahap($request->user(), $tahapNo)) {
             return response()->json([
@@ -242,10 +244,6 @@ class AuditProcessController extends Controller
     {
         if (!$this->canAccessAuditProcess($request->user(), $auditProcess)) {
             return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        if ($tahapNo === 10) {
-            return response()->json(['message' => 'Tahap 10 terisi otomatis dan tidak dapat dihapus manual.'], 422);
         }
 
         $doc = $auditProcess->documents()->where('tahap_no', $tahapNo)->first();
@@ -326,15 +324,7 @@ class AuditProcessController extends Controller
             'status' => 'required|in:pending,in_progress,completed,cancelled',
         ]);
 
-        $statusPayload = ['status' => $request->status];
-        if ($request->status === 'completed') {
-            $statusPayload['tahap_10_finalisasi'] = 'selesai';
-        }
-        if (in_array($request->status, ['pending', 'in_progress'], true)) {
-            $statusPayload['tahap_10_finalisasi'] = 'belum';
-        }
-
-        $auditProcess->update($statusPayload);
+        $auditProcess->update(['status' => $request->status]);
 
         $mappedConversationStatus = match ($request->status) {
             'completed' => 'closed',
@@ -409,7 +399,7 @@ class AuditProcessController extends Controller
         }
 
         if ($user->role === 'auditor') {
-            return $tahapNo >= 1 && $tahapNo <= 10 && !in_array($tahapNo, [1, 6], true);
+            return $tahapNo >= 1 && $tahapNo <= self::MAX_TAHAP_KONSULTASI && !in_array($tahapNo, [1, 6], true);
         }
 
         return false;

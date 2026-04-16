@@ -17,6 +17,9 @@ const ProsesAudit = () => {
   const currentUser = user;
   const userRole = currentUser?.role || 'auditee';
   const userName = currentUser?.name || '';
+  const TOTAL_TAHAP = TAHAPAN_AUDIT.length;
+  const TAHAP_DRAFT_LHK = 10;
+  const TAHAP_AUDITEE_UPLOAD = [1, 6];
   const [konsultasiData, setKonsultasiData] = useState([]);
 
   // State untuk selected konsultasi
@@ -53,9 +56,9 @@ const ProsesAudit = () => {
           return acc;
         }, {});
 
-        if (p.status === 'completed') {
-          stagedDocs[10] = {
-            name: 'Finalisasi Otomatis',
+        if (p.status === 'completed' && !stagedDocs[13]) {
+          stagedDocs[13] = {
+            name: 'Distribusi Selesai (Status Completed)',
             size: 'Sistem',
           };
         }
@@ -107,13 +110,13 @@ const ProsesAudit = () => {
 
     const files = allUploadedFiles[konsultasiId] || {};
     const completed = Object.values(files).filter(f => f !== null).length;
-    return Math.round((completed / 10) * 100);
+    return Math.round((completed / TOTAL_TAHAP) * 100);
   };
 
   // Get uploaded files for selected konsultasi
   const uploadedFiles = selectedKonsultasi ? (allUploadedFiles[selectedKonsultasi.id] || {}) : {};
   const completedCount = Object.values(uploadedFiles).filter(f => f !== null).length;
-  const pendingCount = 10 - completedCount;
+  const pendingCount = Math.max(TOTAL_TAHAP - completedCount, 0);
   const progressPercent = selectedKonsultasi ? getProgress(selectedKonsultasi.id) : 0;
 
   // Filter konsultasi berdasarkan role:
@@ -132,16 +135,15 @@ const ProsesAudit = () => {
   const canUpload = (tahapNo) => {
     if (isKSPI) return false; // KSPI hanya view
     if (userRole === 'manajemen') return true;
-    if (userRole === 'auditee') return tahapNo === 1 || tahapNo === 6;
-    if (userRole === 'auditor') return tahapNo >= 1 && tahapNo <= 10 && tahapNo !== 1 && tahapNo !== 6;
+    if (userRole === 'auditee') return TAHAP_AUDITEE_UPLOAD.includes(tahapNo);
+    if (userRole === 'auditor') return tahapNo >= 1 && tahapNo <= TOTAL_TAHAP && !TAHAP_AUDITEE_UPLOAD.includes(tahapNo);
     return false;
   };
 
-  const canUploadInProcess = (tahapNo) => canUpload(tahapNo) && tahapNo !== 9 && tahapNo !== 10;
+  const canUploadInProcess = (tahapNo) => canUpload(tahapNo) && tahapNo !== TAHAP_DRAFT_LHK;
   const getTahapOwnerLabel = (tahapNo) => {
-    if (tahapNo === 9) return 'Menu Laporan';
-    if (tahapNo === 10) return 'Finalisasi Otomatis';
-    if (tahapNo === 1 || tahapNo === 6) return 'Auditee';
+    if (tahapNo === TAHAP_DRAFT_LHK) return 'Menu Laporan';
+    if (TAHAP_AUDITEE_UPLOAD.includes(tahapNo)) return 'Auditee';
     return 'Auditor';
   };
 
@@ -275,7 +277,7 @@ const ProsesAudit = () => {
               <span className="text-indigo-300 text-[10px] font-medium uppercase tracking-wider">Proses Konsultasi</span>
             </div>
             <h1 className="text-xl font-bold tracking-tight">Proses Konsultasi Audit</h1>
-            <p className="text-indigo-200/50 text-[11px] mt-0.5">Pantau dan kelola seluruh tahapan konsultasi audit</p>
+            <p className="text-indigo-200/50 text-[11px] mt-0.5">Pantau dan kelola seluruh tahapan proses konsultasi audit</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="text-center px-3.5 py-1.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
@@ -309,10 +311,10 @@ const ProsesAudit = () => {
           <p className={`text-sm md:text-[15px] font-semibold leading-relaxed break-words ${
             userRole === 'auditee' ? 'text-blue-800' : userRole === 'auditor' ? 'text-violet-800' : 'text-emerald-800'
           }`}>
-            {userRole === 'auditee' && 'Auditee hanya dapat upload dokumen Tahap 1 dan Tahap 6. Tahap 9 dikelola di menu Laporan, Tahap 10 finalisasi otomatis saat diarsipkan.'}
-            {userRole === 'auditor' && 'Auditor hanya dapat upload dokumen selain Tahap 1 dan Tahap 6. Tahap 9 dikelola di menu Laporan, Tahap 10 finalisasi otomatis saat diarsipkan.'}
+            {userRole === 'auditee' && 'Auditee hanya dapat upload dokumen Tahap 1 dan Tahap 6. Tahap 10 dikelola melalui menu Laporan.'}
+            {userRole === 'auditor' && 'Auditor hanya dapat upload dokumen selain Tahap 1, Tahap 6, dan Tahap 10. Tahap 10 dikelola melalui menu Laporan.'}
             {userRole === 'manajemen' && isKSPI && 'Anda memiliki akses view-only untuk melihat seluruh tahapan dokumen.'}
-            {userRole === 'manajemen' && !isKSPI && 'Anda memiliki akses kelola tahapan 1-8. Tahap 9 dikelola di menu Laporan, Tahap 10 finalisasi otomatis saat diarsipkan.'}
+            {userRole === 'manajemen' && !isKSPI && 'Anda memiliki akses kelola tahapan 1-13, kecuali Tahap 10 yang dikelola melalui menu Laporan.'}
           </p>
         </div>
       </div>
@@ -455,7 +457,7 @@ const ProsesAudit = () => {
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-700">{completedCount}/10</p>
+                    <p className="text-xs font-bold text-slate-700">{completedCount}/{TOTAL_TAHAP}</p>
                     <p className="text-[10px] text-slate-400">tahap selesai</p>
                   </div>
                 </div>
@@ -484,7 +486,7 @@ const ProsesAudit = () => {
               </div>
               <div className="flex items-center gap-3">
                 <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${progressPercent === 100 ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-50 text-indigo-700'}`}>
-                  {completedCount}/10 selesai
+                  {completedCount}/{TOTAL_TAHAP} selesai
                 </div>
                 <div className="relative w-10 h-10">
                   <svg className="w-10 h-10 transform -rotate-90">
@@ -511,6 +513,9 @@ const ProsesAudit = () => {
 
             {/* Horizontal Stepper — semantic colors only */}
             <div className="px-4 md:px-6 py-6">
+              <p className="text-[11px] text-amber-700 mb-4 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                Alur keputusan: jika Tahap 2 ditolak, proses berhenti dan terbit Nota Dinas (status Ditolak). Jika diterima, lanjut ke Tahap 3 sampai Tahap 13.
+              </p>
               <div className="flex items-start">
                 {TAHAPAN_AUDIT.map((tahap, idx) => {
                   const isDone = !!uploadedFiles[tahap.no];
@@ -613,8 +618,8 @@ const ProsesAudit = () => {
                             <IconArrowLeft className="w-3 h-3" /> Sebelumnya
                           </button>
                           <button
-                            onClick={() => setSelectedTahap(prev => Math.min(10, prev + 1))}
-                            disabled={selectedTahap === 10}
+                            onClick={() => setSelectedTahap(prev => Math.min(TOTAL_TAHAP, prev + 1))}
+                            disabled={selectedTahap === TOTAL_TAHAP}
                             className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
                           >
                             Selanjutnya <IconArrowLeft className="w-3 h-3 rotate-180" />
@@ -624,15 +629,7 @@ const ProsesAudit = () => {
 
                       {/* Right: Upload / File / Locked */}
                       <div className="w-full md:w-80 flex-shrink-0">
-                        {selectedTahap === 10 ? (
-                          <div className="rounded-xl border border-slate-200 bg-white p-6 text-center">
-                            <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center mx-auto mb-3">
-                              <IconLock className="w-5 h-5 text-slate-300" />
-                            </div>
-                            <p className="text-sm font-semibold text-slate-500 mb-1">Finalisasi Otomatis</p>
-                            <p className="text-[11px] text-slate-400">Tahap 10 terisi otomatis saat status konsultasi diarsipkan.</p>
-                          </div>
-                        ) : selectedTahap === 9 && !isDone ? (
+                        {selectedTahap === TAHAP_DRAFT_LHK && !isDone ? (
                           <div className="rounded-xl border border-indigo-200 bg-white p-6 text-center">
                             <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center mx-auto mb-3">
                               <IconFileAlt className="w-5 h-5 text-indigo-500" />
@@ -681,7 +678,7 @@ const ProsesAudit = () => {
                               <IconCloudUpload className="w-6 h-6 text-indigo-500" />
                             </div>
                             <p className="text-sm font-bold text-slate-700 mb-1">Upload Dokumen</p>
-                            <p className="text-[11px] text-slate-400">PDF, DOC, DOCX, atau gambar (maks. 20MB)</p>
+                            <p className="text-[11px] text-slate-400">PDF, DOC, DOCX, atau gambar (maks. 50MB)</p>
                             <p className="text-[10px] text-indigo-500 font-semibold mt-2">Klik untuk memilih file</p>
                             <input type="file" ref={el => fileInputRefs.current[selectedTahap] = el} onChange={(e) => handleFileUpload(selectedTahap, e)} className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,image/*" />
                           </div>
