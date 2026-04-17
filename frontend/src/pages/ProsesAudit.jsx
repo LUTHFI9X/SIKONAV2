@@ -81,18 +81,6 @@ const ProsesAudit = () => {
         return acc;
       }, {}));
 
-      setReviewTahap11Notes((prev) => {
-        const next = { ...prev };
-
-        processes.forEach((p) => {
-          if (!reviewTahap11DirtyRef.current[p.id]) {
-            next[p.id] = p.lhk_review_note || '';
-          }
-        });
-
-        return next;
-      });
-
       setSelectedKonsultasi((prev) => {
         if (!prev) return prev;
         const refreshed = mapped.find((item) => item.id === prev.id);
@@ -119,9 +107,8 @@ const ProsesAudit = () => {
 
   // State untuk catatan auditor per konsultasi
   const [catatanAuditor, setCatatanAuditor] = useState({});
-  const [reviewTahap11Notes, setReviewTahap11Notes] = useState({});
+  const [reviewTahap11DraftNotes, setReviewTahap11DraftNotes] = useState({});
   const [savingReviewDecision, setSavingReviewDecision] = useState(false);
-  const reviewTahap11DirtyRef = useRef({});
 
   const fileInputRefs = useRef({});
   const [acceptedDecisions, setAcceptedDecisions] = useState({});
@@ -398,19 +385,61 @@ const ProsesAudit = () => {
     }
   };
 
+  const getNextReviewNumber = (reviewHistory = '') => {
+    const regex = /Review\s+(\d+)\./gi;
+    let maxNumber = 0;
+    let match = regex.exec(reviewHistory);
+
+    while (match) {
+      const currentNumber = Number(match[1]);
+      if (Number.isFinite(currentNumber)) {
+        maxNumber = Math.max(maxNumber, currentNumber);
+      }
+      match = regex.exec(reviewHistory);
+    }
+
+    return maxNumber + 1;
+  };
+
+  const appendReviewHistory = (reviewHistory = '', latestDraftNote = '') => {
+    const trimmedNote = (latestDraftNote || '').trim();
+    if (!trimmedNote) {
+      return (reviewHistory || '').trim();
+    }
+
+    const nextReviewNumber = getNextReviewNumber(reviewHistory);
+    const nextEntry = `Review ${nextReviewNumber}. ${trimmedNote}`;
+    const trimmedHistory = (reviewHistory || '').trim();
+
+    return trimmedHistory ? `${trimmedHistory}\n\n${nextEntry}` : nextEntry;
+  };
+
   const handleTahap11ReviewDecision = async (reviewApproved) => {
     if (!selectedKonsultasi?.id) return;
 
+    const konsultasiId = selectedKonsultasi.id;
+    const latestDraftNote = reviewTahap11DraftNotes[konsultasiId] || '';
+    const existingReviewHistory = selectedKonsultasi.lhkReviewNote || '';
+    const nextReviewHistory = appendReviewHistory(existingReviewHistory, latestDraftNote);
+
+    if (!reviewApproved && !latestDraftNote.trim()) {
+      alert('Isi catatan review terlebih dahulu sebelum menekan tombol Review.');
+      return;
+    }
+
     try {
       setSavingReviewDecision(true);
-      const reviewNote = reviewTahap11Notes[selectedKonsultasi.id] || '';
-      await auditAPI.updateLhkReview(selectedKonsultasi.id, reviewNote, reviewApproved);
+      await auditAPI.updateLhkReview(konsultasiId, nextReviewHistory, reviewApproved);
 
       if (reviewApproved) {
-        await auditAPI.updateStatus(selectedKonsultasi.id, 'completed');
+        await auditAPI.updateStatus(konsultasiId, 'completed');
       }
 
-      reviewTahap11DirtyRef.current[selectedKonsultasi.id] = false;
+      setReviewTahap11DraftNotes((prev) => ({
+        ...prev,
+        [konsultasiId]: '',
+      }));
+
       await fetchProcesses();
 
       if (reviewApproved) {
@@ -500,9 +529,9 @@ const ProsesAudit = () => {
             userRole === 'auditee' ? 'text-blue-800' : userRole === 'auditor' ? 'text-violet-800' : 'text-emerald-800'
           }`}>
             {userRole === 'auditee' && 'Auditee hanya dapat upload dokumen Tahap 1 dan Tahap 6, serta hanya dapat melihat file Tahap 1, 2, dan 6. Tahap 10 dikelola melalui menu Laporan dan Tahap 11 menggunakan catatan review.'}
-            {userRole === 'auditor' && 'Auditor hanya dapat upload dokumen selain Tahap 1, Tahap 6, Tahap 10, dan Tahap 11. Tahap 10 dikelola di menu Laporan, sedangkan Tahap 11 menggunakan catatan review ON/OFF.'}
+            {userRole === 'auditor' && 'Auditor hanya dapat upload dokumen selain Tahap 1, Tahap 6, Tahap 10, dan Tahap 11. Tahap 10 dikelola di menu Laporan, sedangkan Tahap 11 menggunakan catatan review dengan tombol Review/Finalisasi.'}
             {userRole === 'manajemen' && isKSPI && 'Anda memiliki akses view-only untuk melihat seluruh tahapan dokumen.'}
-            {userRole === 'manajemen' && !isKSPI && 'Anda memiliki akses kelola tahapan 1-13, dengan Tahap 10 dikelola di menu Laporan dan Tahap 11 dikelola sebagai review catatan ON/OFF.'}
+            {userRole === 'manajemen' && !isKSPI && 'Anda memiliki akses kelola tahapan 1-13, dengan Tahap 10 dikelola di menu Laporan dan Tahap 11 dikelola sebagai review catatan dengan tombol Review/Finalisasi.'}
           </p>
         </div>
       </div>
@@ -805,7 +834,9 @@ const ProsesAudit = () => {
               const currentReviewDecision = getLhkReviewDecision(selectedKonsultasi);
               const isReviewOff = isTahapReviewLaporan && currentReviewDecision === false;
               const isReviewOn = isTahapReviewLaporan && currentReviewDecision === true;
-              const reviewTahap11Note = reviewTahap11Notes[selectedKonsultasi?.id] || '';
+              const reviewTahap11History = selectedKonsultasi?.lhkReviewNote || '';
+              const reviewTahap11DraftNote = reviewTahap11DraftNotes[selectedKonsultasi?.id] || '';
+              const canSubmitReviewTahap11 = reviewTahap11DraftNote.trim().length > 0;
               const showRejectedFileStyle = selectedTahap === TAHAP_KEPUTUSAN && isRejectedTahap;
               if (!tahap) return null;
               return (
@@ -831,7 +862,7 @@ const ProsesAudit = () => {
                           <div className="flex items-center gap-2 flex-wrap">
                             {isRejectedTahap ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
-                                <IconCheckCircle className="w-3 h-3" /> {selectedTahap === TAHAP_REVIEW_LHK ? 'Review OFF' : 'Ditolak'}
+                                <IconCheckCircle className="w-3 h-3" /> {selectedTahap === TAHAP_REVIEW_LHK ? 'Review' : 'Ditolak'}
                               </span>
                             ) : isAcceptedTahap ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
@@ -855,38 +886,40 @@ const ProsesAudit = () => {
                           </div>
                         </div>
                         {/* Navigation */}
-                        <div className="flex items-center gap-2 mt-5 ml-[56px] flex-wrap">
-                          <button
-                            onClick={() => setSelectedTahap(prev => Math.max(1, prev - 1))}
-                            disabled={selectedTahap === 1 || selectedTahap === visibleTahapan[0]?.no}
-                            className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
-                          >
-                            <IconArrowLeft className="w-3 h-3" /> Sebelumnya
-                          </button>
-                          {selectedTahap === TAHAP_KEPUTUSAN && !isSelectedRejectedFlow && !isAcceptedTahap && canUploadThis && (
+                        {selectedTahap !== TAHAP_REVIEW_LHK && (
+                          <div className="flex items-center gap-2 mt-5 ml-[56px] flex-wrap">
                             <button
-                              type="button"
-                              onClick={() => {
-                                if (selectedKonsultasi?.id) {
-                                  setAcceptedDecisions(prev => ({ ...prev, [selectedKonsultasi.id]: true }));
-                                }
-                                setSelectedTahap(3);
-                              }}
-                              className="px-3.5 py-2 rounded-lg bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600 transition-all"
+                              onClick={() => setSelectedTahap(prev => Math.max(1, prev - 1))}
+                              disabled={selectedTahap === 1 || selectedTahap === visibleTahapan[0]?.no}
+                              className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
                             >
-                              Konsultasi Diterima, Lanjut Membuat Surat Tugas
+                              <IconArrowLeft className="w-3 h-3" /> Sebelumnya
                             </button>
-                          )}
-                          {selectedTahap !== TAHAP_KEPUTUSAN && (
-                            <button
-                              onClick={() => setSelectedTahap(prev => Math.min(maxVisibleTahap, prev + 1))}
-                              disabled={selectedTahap === maxVisibleTahap}
-                              className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
-                            >
-                              Selanjutnya <IconArrowLeft className="w-3 h-3 rotate-180" />
-                            </button>
-                          )}
-                        </div>
+                            {selectedTahap === TAHAP_KEPUTUSAN && !isSelectedRejectedFlow && !isAcceptedTahap && canUploadThis && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (selectedKonsultasi?.id) {
+                                    setAcceptedDecisions(prev => ({ ...prev, [selectedKonsultasi.id]: true }));
+                                  }
+                                  setSelectedTahap(3);
+                                }}
+                                className="px-3.5 py-2 rounded-lg bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600 transition-all"
+                              >
+                                Konsultasi Diterima, Lanjut Membuat Surat Tugas
+                              </button>
+                            )}
+                            {selectedTahap !== TAHAP_KEPUTUSAN && (
+                              <button
+                                onClick={() => setSelectedTahap(prev => Math.min(maxVisibleTahap, prev + 1))}
+                                disabled={selectedTahap === maxVisibleTahap}
+                                className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
+                              >
+                                Selanjutnya <IconArrowLeft className="w-3 h-3 rotate-180" />
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Right: Upload / File / Locked */}
@@ -918,34 +951,38 @@ const ProsesAudit = () => {
                           <div className={`rounded-xl border bg-white p-5 ${isReviewOff ? 'border-red-200' : isReviewOn ? 'border-emerald-200' : 'border-amber-200'}`}>
                             <p className="text-sm font-semibold text-slate-700 mb-1">Tahap 11: Review (Catatan)</p>
                             <p className="text-[11px] text-slate-500 mb-3">
-                              Tahap review menggunakan catatan + tombol ON/OFF. ON akan lanjut otomatis ke Tahap 12, OFF tetap di Tahap 11 dan berwarna merah.
+                              Tahap review menggunakan catatan berformat otomatis Review 1, Review 2, dan seterusnya. Tombol Finalisasi akan lanjut otomatis ke Tahap 12, sedangkan tombol Review tetap di Tahap 11 dan berwarna merah.
                             </p>
 
                             {canManageReviewTahap11 ? (
-                              <textarea
-                                value={reviewTahap11Note}
-                                onChange={(e) => {
-                                  reviewTahap11DirtyRef.current[selectedKonsultasi.id] = true;
-                                  setReviewTahap11Notes((prev) => ({ ...prev, [selectedKonsultasi.id]: e.target.value }));
-                                }}
-                                placeholder="Masukkan catatan review tahap 11..."
-                                className="w-full p-3 border border-slate-200 rounded-lg bg-slate-50 text-slate-700 placeholder-slate-400 text-xs resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300"
-                              />
-                            ) : (
-                              <div className="w-full p-3 border border-slate-200 rounded-lg bg-slate-100 text-slate-600 text-xs min-h-[90px]">
-                                {reviewTahap11Note || 'Belum ada catatan review.'}
-                              </div>
-                            )}
+                              <>
+                                <textarea
+                                  value={reviewTahap11DraftNote}
+                                  onChange={(e) => {
+                                    setReviewTahap11DraftNotes((prev) => ({ ...prev, [selectedKonsultasi.id]: e.target.value }));
+                                  }}
+                                  placeholder="Masukkan catatan review terbaru. Contoh: Mohon perbaiki lampiran halaman 3."
+                                  className="w-full p-3 border border-slate-200 rounded-lg bg-slate-50 text-slate-700 placeholder-slate-400 text-xs resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300"
+                                />
+                                <p className="text-[11px] text-slate-500 mt-2">
+                                  Format otomatis saat disimpan: Review 1. ..., Review 2. ..., dan seterusnya.
+                                </p>
+                              </>
+                            ) : null}
+
+                            <div className="w-full p-3 border border-slate-200 rounded-lg bg-slate-100 text-slate-600 text-xs min-h-[90px] mt-3 whitespace-pre-line">
+                              {reviewTahap11History || 'Belum ada catatan review tersimpan.'}
+                            </div>
 
                             {canManageReviewTahap11 ? (
                               <div className="grid grid-cols-2 gap-2 mt-3">
                                 <button
                                   type="button"
                                   onClick={() => handleTahap11ReviewDecision(false)}
-                                  disabled={savingReviewDecision}
+                                  disabled={savingReviewDecision || !canSubmitReviewTahap11}
                                   className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${isReviewOff ? 'bg-red-500 text-white border-red-500' : 'bg-white text-red-600 border-red-200 hover:bg-red-50'}`}
                                 >
-                                  OFF
+                                  Review
                                 </button>
                                 <button
                                   type="button"
@@ -953,12 +990,12 @@ const ProsesAudit = () => {
                                   disabled={savingReviewDecision}
                                   className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${isReviewOn ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50'}`}
                                 >
-                                  ON
+                                  Finalisasi
                                 </button>
                               </div>
                             ) : (
                               <p className="text-[11px] text-slate-500 mt-3">
-                                Keputusan ON/OFF review Tahap 11 dikelola oleh auditor/manajemen.
+                                Keputusan Review/Finalisasi Tahap 11 dikelola oleh auditor/manajemen.
                               </p>
                             )}
                           </div>
