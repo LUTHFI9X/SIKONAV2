@@ -22,7 +22,6 @@ const ProsesAudit = () => {
   const TAHAP_REVIEW_KKA = 8;
   const TAHAP_DRAFT_LHK = 10;
   const TAHAP_REVIEW_LHK = 11;
-  const TAHAP_FINALISASI_LHK = 12;
   const TAHAP_KEPUTUSAN = 2;
   const TAHAP_AUDITEE_UPLOAD = [1, 6];
   const TAHAP_AUDITEE_VIEW = [1, 2, 6];
@@ -1232,7 +1231,7 @@ const ProsesAudit = () => {
                               <p className="text-[10px] text-indigo-500 font-semibold mt-2">Klik untuk memilih file</p>
                               <input type="file" ref={el => fileInputRefs.current[selectedTahap] = el} onChange={(e) => handleFileUpload(selectedTahap, e)} className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,image/*" />
                             </div>
-                            {selectedTahap === TAHAP_FINALISASI_LHK && (
+                            {selectedTahap === TAHAP_KEPUTUSAN && (
                               <p className="text-[11px] text-amber-600 mt-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                                 Upload File jika Konsultasi ditolak.
                               </p>
