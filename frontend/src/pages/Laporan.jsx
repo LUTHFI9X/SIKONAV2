@@ -94,13 +94,14 @@ const Laporan = () => {
   const formatPerihalFromSubject = (subject = '', tahunAudit = '') => {
     const normalizedSubject = (subject || '').trim();
     if (normalizedSubject) {
-      return /^perihal\s+/i.test(normalizedSubject)
-        ? normalizedSubject
-        : `Perihal ${normalizedSubject}`;
+      const cleanedSubject = normalizedSubject.replace(/^perihal\s+/i, '').trim();
+      if (cleanedSubject) {
+        return cleanedSubject;
+      }
     }
 
     const fallback = `Audit ${tahunAudit || ''}`.trim();
-    return fallback ? `Perihal ${fallback}` : 'Perihal Konsultasi Audit';
+    return fallback || 'Konsultasi Audit';
   };
 
   const validateLhkFile = (file) => {
