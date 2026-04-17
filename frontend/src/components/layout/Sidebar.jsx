@@ -142,6 +142,12 @@ const Sidebar = ({ mobileOpen = false, onClose }) => {
 
   return (
     <aside className={`sidebar z-[120] transition-transform duration-300 ease-out ${mobileOpen ? 'translate-x-0 shadow-2xl shadow-slate-950/45' : '-translate-x-full'} lg:translate-x-0 lg:shadow-none`}>
+      <div className="sidebar-aurora" aria-hidden="true">
+        <span className="sidebar-bubble sidebar-bubble-1"></span>
+        <span className="sidebar-bubble sidebar-bubble-2"></span>
+        <span className="sidebar-bubble sidebar-bubble-3"></span>
+      </div>
+
       {/* Logo Section */}
       <div className="p-5 mb-2 relative">
         <button
@@ -187,6 +193,8 @@ const Sidebar = ({ mobileOpen = false, onClose }) => {
               onClick={closeMobileSidebar}
               className={({ isActive }) => `nav-link group ${isActive ? 'active' : ''}`}
             >
+              <span className="nav-link-liquid" aria-hidden="true"></span>
+              <span className="nav-link-glow" aria-hidden="true"></span>
               <item.Icon className={`w-5 h-5 transition-transform duration-300 ${item.iconHover || ''}`} />
               <span className="flex-1">{item.label}</span>
               {item.path === '/konsultasi' && konsultasiUnread > 0 && (
@@ -213,6 +221,8 @@ const Sidebar = ({ mobileOpen = false, onClose }) => {
                 onClick={closeMobileSidebar}
                 className={({ isActive }) => `nav-link group ${isActive ? 'active' : ''}`}
               >
+                <span className="nav-link-liquid" aria-hidden="true"></span>
+                <span className="nav-link-glow" aria-hidden="true"></span>
                 <item.Icon className={`w-5 h-5 transition-transform duration-300 ${item.iconHover || ''}`} />
                 <span>{item.label}</span>
               </NavLink>
