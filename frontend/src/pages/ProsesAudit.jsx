@@ -81,10 +81,17 @@ const ProsesAudit = () => {
         return acc;
       }, {}));
 
-      setReviewTahap11Notes(processes.reduce((acc, p) => {
-        acc[p.id] = p.lhk_review_note || '';
-        return acc;
-      }, {}));
+      setReviewTahap11Notes((prev) => {
+        const next = { ...prev };
+
+        processes.forEach((p) => {
+          if (!reviewTahap11DirtyRef.current[p.id]) {
+            next[p.id] = p.lhk_review_note || '';
+          }
+        });
+
+        return next;
+      });
 
       setSelectedKonsultasi((prev) => {
         if (!prev) return prev;
@@ -114,6 +121,7 @@ const ProsesAudit = () => {
   const [catatanAuditor, setCatatanAuditor] = useState({});
   const [reviewTahap11Notes, setReviewTahap11Notes] = useState({});
   const [savingReviewDecision, setSavingReviewDecision] = useState(false);
+  const reviewTahap11DirtyRef = useRef({});
 
   const fileInputRefs = useRef({});
   const [acceptedDecisions, setAcceptedDecisions] = useState({});
@@ -397,6 +405,12 @@ const ProsesAudit = () => {
       setSavingReviewDecision(true);
       const reviewNote = reviewTahap11Notes[selectedKonsultasi.id] || '';
       await auditAPI.updateLhkReview(selectedKonsultasi.id, reviewNote, reviewApproved);
+
+      if (reviewApproved) {
+        await auditAPI.updateStatus(selectedKonsultasi.id, 'completed');
+      }
+
+      reviewTahap11DirtyRef.current[selectedKonsultasi.id] = false;
       await fetchProcesses();
 
       if (reviewApproved) {
@@ -785,7 +799,7 @@ const ProsesAudit = () => {
               const hasFile = !!file;
               const canUploadThis = canUploadInProcess(selectedTahap);
               const canViewThis = canViewInProcess(selectedTahap);
-              const canManageReviewTahap11 = userRole !== 'auditee' && !isKSPI;
+              const canManageReviewTahap11 = userRole !== 'auditee' && !isKSPI && selectedKonsultasi?.statusRaw !== 'completed';
               const isTahapDraftLaporan = selectedTahap === TAHAP_DRAFT_LHK;
               const isTahapReviewLaporan = selectedTahap === TAHAP_REVIEW_LHK;
               const currentReviewDecision = getLhkReviewDecision(selectedKonsultasi);
@@ -910,7 +924,10 @@ const ProsesAudit = () => {
                             {canManageReviewTahap11 ? (
                               <textarea
                                 value={reviewTahap11Note}
-                                onChange={(e) => setReviewTahap11Notes((prev) => ({ ...prev, [selectedKonsultasi.id]: e.target.value }))}
+                                onChange={(e) => {
+                                  reviewTahap11DirtyRef.current[selectedKonsultasi.id] = true;
+                                  setReviewTahap11Notes((prev) => ({ ...prev, [selectedKonsultasi.id]: e.target.value }));
+                                }}
                                 placeholder="Masukkan catatan review tahap 11..."
                                 className="w-full p-3 border border-slate-200 rounded-lg bg-slate-50 text-slate-700 placeholder-slate-400 text-xs resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300"
                               />

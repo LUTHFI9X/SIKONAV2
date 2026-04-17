@@ -15,9 +15,9 @@ import {
 const ROWS_PER_PAGE = 7;
 
 const STATUS_CONFIG = {
-  draft:    { label: 'Draft',           color: 'text-blue-600',    bg: 'bg-blue-50',    border: 'border-blue-200',  dot: 'bg-blue-400',    icon: IconSpinner },
-  review:   { label: 'Review',          color: 'text-amber-600',   bg: 'bg-amber-50',   border: 'border-amber-200', dot: 'bg-amber-400',   icon: IconClock },
-  arsip:    { label: 'Diarsipkan',      color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-400', icon: IconArchive },
+  draft:    { label: 'Draft (Tahap 10)',      color: 'text-blue-600',    bg: 'bg-blue-50',    border: 'border-blue-200',  dot: 'bg-blue-400',    icon: IconSpinner },
+  review:   { label: 'Review (Tahap 11)',     color: 'text-amber-600',   bg: 'bg-amber-50',   border: 'border-amber-200', dot: 'bg-amber-400',   icon: IconClock },
+  arsip:    { label: 'Diarsipkan (Tahap 12)', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-400', icon: IconArchive },
 };
 
 /* ═══════════════════════════════════════
@@ -218,6 +218,11 @@ const Laporan = () => {
 
   /* ── Helpers ── */
   const getBiroInfo = (kategori) => biroList.find(b => b.name === kategori);
+  const getStatusTahapNo = (status) => {
+    if (status === 'draft') return 10;
+    if (status === 'review') return 11;
+    return 12;
+  };
 
   const openUploadModal = (id) => {
     const existing = laporan[id];
@@ -252,8 +257,8 @@ const Laporan = () => {
       return;
     }
 
-    if (existing.status !== 'draft') {
-      alert('Dokumen hanya bisa dihapus saat status Draft.');
+    if (existing.status === 'arsip') {
+      alert('Dokumen arsip tidak dapat dihapus atau diganti.');
       return;
     }
 
@@ -297,22 +302,23 @@ const Laporan = () => {
 
   const handleSubmitUpload = async () => {
     if (!selectedFile || !uploadModal) return;
-    if (laporan[uploadModal] && laporan[uploadModal]?.status !== 'draft') {
-      alert('Dokumen hanya bisa diganti saat status Draft.');
+    if (laporan[uploadModal]?.status === 'arsip') {
+      alert('Dokumen arsip tidak dapat dihapus atau diganti.');
       return;
     }
     if (!uploadForm.nomorLHK.trim()) { alert('Nomor LHK wajib diisi.'); return; }
     if (!uploadForm.perihal.trim())  { alert('Perihal wajib diisi.'); return; }
     try {
       await auditAPI.uploadDokumen(uploadModal, selectedFile, DRAFT_LHK_TAHAP);
-      await auditAPI.updateLhkStage(uploadModal, 'draft');
+      const stageAfterUpload = laporan[uploadModal]?.status === 'review' ? 'review' : 'draft';
+      await auditAPI.updateLhkStage(uploadModal, stageAfterUpload);
       if (uploadForm.catatan.trim()) {
         await auditAPI.updateCatatan(uploadModal, uploadForm.catatan.trim());
       }
       await auditAPI.updateStatus(uploadModal, 'in_progress');
       await fetchData();
       setUploadModal(null); setSelectedFile(null);
-      setFlashMessage('Draft LHK berhasil diunggah.');
+      setFlashMessage(stageAfterUpload === 'review' ? 'Dokumen review berhasil diperbarui.' : 'Draft LHK berhasil diunggah.');
     } catch (error) {
       console.error('Upload draft gagal:', error);
       const status = error?.response?.status;
@@ -681,7 +687,12 @@ const Laporan = () => {
 
                       {/* Status */}
                       <td className="px-3 py-3">
-                        {ld ? <StatusBadge status={ld.status} /> : <span className="text-[10px] text-slate-300">—</span>}
+                        {ld ? (
+                          <div className="space-y-1">
+                            <StatusBadge status={ld.status} />
+                            <p className="text-[9px] text-slate-400 font-medium">Tahap {getStatusTahapNo(ld.status)}</p>
+                          </div>
+                        ) : <span className="text-[10px] text-slate-300">—</span>}
                       </td>
 
                       {/* Aksi */}
@@ -805,6 +816,7 @@ const Laporan = () => {
                   <div className="flex items-center gap-1 px-2">
                     {['draft', 'review', 'arsip'].map((step, i) => {
                       const stepOrder = { draft: 0, review: 1, arsip: 2 };
+                      const stepNumber = step === 'draft' ? 10 : step === 'review' ? 11 : 12;
                       const currentOrder = stepOrder[detailLaporan.status] ?? 0;
                       const isCompleted = stepOrder[step] <= currentOrder;
                       const isCurrent = step === detailLaporan.status;
@@ -818,7 +830,7 @@ const Laporan = () => {
                                   : 'bg-emerald-500 border-emerald-500 text-white'
                                 : 'bg-white border-slate-200 text-slate-400'
                             }`}>
-                              {isCompleted && !isCurrent ? <IconCheckCircle className="w-4 h-4" /> : i + 1}
+                              {isCompleted && !isCurrent ? <IconCheckCircle className="w-4 h-4" /> : stepNumber}
                             </div>
                             <p className={`text-[9px] font-semibold mt-1.5 ${isCompleted ? 'text-slate-700' : 'text-slate-300'}`}>
                               {step === 'draft' ? 'Draft' : step === 'review' ? 'Review' : 'Arsip'}
@@ -923,6 +935,12 @@ const Laporan = () => {
                 )}
                 {isAuditor && detailLaporan.status === 'review' && (
                   <div className="flex items-center gap-2">
+                    <button onClick={() => { setDetailId(null); openUploadModal(detailId); }} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-amber-50 text-amber-600 text-sm font-semibold rounded-xl hover:bg-amber-100 border border-amber-200/60 transition-colors">
+                      <IconUpload className="w-4 h-4" /> Ganti
+                    </button>
+                    <button onClick={() => handleDelete(detailId)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-red-50 text-red-500 text-sm font-semibold rounded-xl hover:bg-red-100 border border-red-200/60 transition-colors">
+                      <IconTrash className="w-4 h-4" /> Hapus
+                    </button>
                     <button
                       onClick={() => handleAdvanceStatus(detailId)}
                       disabled={detailLaporan.reviewApproved !== true}
