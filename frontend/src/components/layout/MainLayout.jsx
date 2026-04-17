@@ -525,9 +525,9 @@ const MainLayout = () => {
           </div>
         </header>
 
-        <div className="menu-content-surface flex-1 overflow-y-auto px-3 pb-3 pt-0 sm:px-5 sm:pb-5 sm:pt-0 lg:px-8 lg:pb-8 lg:pt-0">
+        <div className="menu-content-surface flex-1 overflow-y-auto px-3 pb-3 pt-2 sm:px-5 sm:pb-5 sm:pt-3 lg:px-8 lg:pb-8 lg:pt-4">
           {showUxTip && (
-            <div className={`mb-5 rounded-xl border px-4 py-3 flex items-start justify-between gap-3 ${isNightMode ? 'bg-indigo-950/30 border-indigo-800 text-indigo-100' : 'bg-indigo-50 border-indigo-200 text-indigo-700'}`}>
+            <div className={`mb-5 mt-1 sm:mt-2 rounded-xl border px-4 py-3 flex items-start justify-between gap-3 ${isNightMode ? 'bg-indigo-950/30 border-indigo-800 text-indigo-100' : 'bg-indigo-50 border-indigo-200 text-indigo-700'}`}>
               <p className="text-sm font-medium">{t('ux.quickTip', 'Tip cepat: tekan Cmd/Ctrl + K untuk pindah halaman lebih cepat.')}</p>
               <button
                 type="button"
@@ -542,7 +542,7 @@ const MainLayout = () => {
               </button>
             </div>
           )}
-          <div className={!showUxTip ? 'pt-3 sm:pt-5 lg:pt-6' : ''}>
+          <div className={showUxTip ? 'pt-1 sm:pt-2' : 'pt-2 sm:pt-3 lg:pt-4'}>
             <Outlet />
           </div>
         </div>
