@@ -3,7 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUX } from '../../contexts/UXContext';
 import { conversationAPI, activityLogAPI } from '../../services/api';
-import { IconUser, IconMoon, IconSun, IconBell, IconClock, IconGear, IconChevronDown, IconMenu, IconX } from '../Icons';
+import { IconUser, IconMoon, IconSun, IconBell, IconClock, IconGear, IconChevronDown, IconMenu, IconX, IconCheckCircle, IconInfoCircle } from '../Icons';
 import Sidebar from './Sidebar';
 
 const MainLayout = () => {
@@ -341,6 +341,8 @@ const MainLayout = () => {
     return 'USER';
   };
 
+  const onboardingProgressPercent = Math.round(((onboardingStep + 1) / Math.max(onboardingSteps.length, 1)) * 100);
+
   return (
     <div className={`min-h-screen h-screen overflow-hidden transition-colors duration-300 ${isNightMode ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950' : 'bg-gradient-to-br from-[#f0f4ff] via-[#faf5ff] to-[#f0fdfa]'}`}>
       <Sidebar mobileOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
@@ -523,7 +525,7 @@ const MainLayout = () => {
           </div>
         </header>
 
-        <div className="menu-content-surface flex-1 overflow-y-auto p-3 sm:p-5 lg:p-8">
+        <div className="menu-content-surface flex-1 overflow-y-auto px-3 pb-3 pt-0 sm:px-5 sm:pb-5 sm:pt-0 lg:px-8 lg:pb-8 lg:pt-0">
           {showUxTip && (
             <div className={`mb-5 rounded-xl border px-4 py-3 flex items-start justify-between gap-3 ${isNightMode ? 'bg-indigo-950/30 border-indigo-800 text-indigo-100' : 'bg-indigo-50 border-indigo-200 text-indigo-700'}`}>
               <p className="text-sm font-medium">{t('ux.quickTip', 'Tip cepat: tekan Cmd/Ctrl + K untuk pindah halaman lebih cepat.')}</p>
@@ -540,7 +542,9 @@ const MainLayout = () => {
               </button>
             </div>
           )}
-          <Outlet />
+          <div className={!showUxTip ? 'pt-3 sm:pt-5 lg:pt-6' : ''}>
+            <Outlet />
+          </div>
         </div>
       </div>
 
@@ -644,15 +648,30 @@ const MainLayout = () => {
 
               <div className="flex flex-col min-h-[420px] sm:min-h-[520px]">
                 <div className={`px-5 sm:px-7 py-5 border-b ${isNightMode ? 'border-slate-700' : 'border-slate-100'}`}>
-                  <div className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-400/30">
-                    {onboardingSteps[onboardingStep]?.eyebrow}
+                  <div className={`onboarding-reading-hero rounded-2xl border px-4 py-4 sm:px-5 sm:py-5 ${isNightMode ? 'border-indigo-500/30 bg-indigo-500/10' : 'border-indigo-200 bg-indigo-50/70'}`}>
+                    <div className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-400/30">
+                      {onboardingSteps[onboardingStep]?.eyebrow}
+                    </div>
+                    <h4 className={`text-xl sm:text-2xl font-bold mt-3 leading-snug ${isNightMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                      {onboardingSteps[onboardingStep]?.title}
+                    </h4>
+                    <p className={`text-sm sm:text-[15px] mt-3 leading-relaxed ${isNightMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                      {onboardingSteps[onboardingStep]?.body}
+                    </p>
+
+                    <div className={`onboarding-progress-track mt-4 ${isNightMode ? 'bg-indigo-200/20' : 'bg-indigo-200/60'}`}>
+                      <span className="onboarding-progress-fill" style={{ width: `${onboardingProgressPercent}%` }}></span>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${isNightMode ? 'border-slate-600 text-slate-300 bg-slate-800/60' : 'border-slate-200 text-slate-600 bg-white/80'}`}>
+                        {language === 'id' ? `Langkah ${onboardingStep + 1}/${onboardingSteps.length}` : `Step ${onboardingStep + 1}/${onboardingSteps.length}`}
+                      </span>
+                      <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${isNightMode ? 'border-slate-600 text-slate-300 bg-slate-800/60' : 'border-slate-200 text-slate-600 bg-white/80'}`}>
+                        {language === 'id' ? 'Durasi baca: ±45 detik' : 'Read time: ~45 sec'}
+                      </span>
+                    </div>
                   </div>
-                  <h4 className={`text-xl sm:text-2xl font-bold mt-3 leading-snug ${isNightMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                    {onboardingSteps[onboardingStep]?.title}
-                  </h4>
-                  <p className={`text-sm sm:text-[15px] mt-3 leading-relaxed ${isNightMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                    {onboardingSteps[onboardingStep]?.body}
-                  </p>
                 </div>
 
                 <div className="px-5 sm:px-7 py-5 flex-1 overflow-y-auto">
@@ -663,19 +682,31 @@ const MainLayout = () => {
                     {onboardingSteps[onboardingStep]?.highlights?.map((item, idx) => (
                       <div
                         key={`${item}-${idx}`}
-                        className={`rounded-xl border px-3 py-2.5 flex items-start gap-3 ${isNightMode ? 'bg-slate-800/70 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'}`}
+                        className={`onboarding-highlight-card rounded-xl border px-3 py-2.5 flex items-start gap-3 ${isNightMode ? 'bg-slate-800/70 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'}`}
                       >
-                        <span className={`mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold ${isNightMode ? 'bg-indigo-500/25 text-indigo-200' : 'bg-indigo-100 text-indigo-700'}`}>
-                          {idx + 1}
+                        <span className={`mt-0.5 w-7 h-7 rounded-xl flex items-center justify-center ${isNightMode ? 'bg-indigo-500/25 text-indigo-200' : 'bg-indigo-100 text-indigo-700'}`}>
+                          <IconCheckCircle className="w-4 h-4" />
                         </span>
-                        <p className="text-sm leading-relaxed">{item}</p>
+                        <div className="min-w-0">
+                          <p className={`text-[10px] font-bold uppercase tracking-wider ${isNightMode ? 'text-indigo-200/80' : 'text-indigo-600/80'}`}>
+                            {language === 'id' ? `Poin ${idx + 1}` : `Point ${idx + 1}`}
+                          </p>
+                          <p className="text-sm leading-relaxed mt-0.5">{item}</p>
+                        </div>
                       </div>
                     ))}
                   </div>
 
-                  <div className={`mt-4 rounded-xl border px-4 py-3 ${isNightMode ? 'bg-emerald-500/10 border-emerald-400/30 text-emerald-200' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
-                    <p className="text-xs uppercase tracking-wider font-bold">{language === 'id' ? 'Pro Tip' : 'Pro Tip'}</p>
-                    <p className="text-sm font-semibold mt-1.5 leading-relaxed">{onboardingSteps[onboardingStep]?.tip}</p>
+                  <div className={`onboarding-tip-card mt-4 rounded-xl border px-4 py-3 ${isNightMode ? 'bg-emerald-500/10 border-emerald-400/30 text-emerald-200' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
+                    <div className="flex items-start gap-3">
+                      <span className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center ${isNightMode ? 'bg-emerald-400/20 text-emerald-200' : 'bg-emerald-100 text-emerald-700'}`}>
+                        <IconInfoCircle className="w-4 h-4" />
+                      </span>
+                      <div>
+                        <p className="text-xs uppercase tracking-wider font-bold">{language === 'id' ? 'Pro Tip' : 'Pro Tip'}</p>
+                        <p className="text-sm font-semibold mt-1.5 leading-relaxed">{onboardingSteps[onboardingStep]?.tip}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

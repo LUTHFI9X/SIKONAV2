@@ -1377,11 +1377,11 @@ input:checked + .slider:before {
 .menu-content-surface {
   position: relative;
   isolation: isolate;
+  margin-top: -1px;
   background:
     radial-gradient(108% 78% at 14% -8%, rgba(99, 102, 241, 0.14) 0%, transparent 56%),
     radial-gradient(112% 84% at 100% 0%, rgba(168, 85, 247, 0.12) 0%, transparent 60%),
     linear-gradient(180deg, rgba(243, 245, 255, 0.86) 0%, rgba(244, 246, 255, 0.68) 48%, rgba(247, 249, 255, 0.78) 100%);
-  border-top: 1px solid rgba(255, 255, 255, 0.55);
 }
 
 .menu-content-surface::before {
@@ -1418,7 +1418,69 @@ input:checked + .slider:before {
     radial-gradient(110% 80% at 12% -8%, rgba(99, 102, 241, 0.18) 0%, transparent 58%),
     radial-gradient(110% 82% at 100% 0%, rgba(168, 85, 247, 0.16) 0%, transparent 62%),
     linear-gradient(180deg, rgba(5, 10, 28, 0.88) 0%, rgba(10, 16, 37, 0.82) 48%, rgba(12, 20, 43, 0.88) 100%);
-  border-top-color: rgba(100, 116, 139, 0.26);
+}
+
+.onboarding-reading-hero {
+  position: relative;
+  overflow: hidden;
+}
+
+.onboarding-reading-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 85% 18%, rgba(255, 255, 255, 0.2) 0%, transparent 46%),
+    linear-gradient(135deg, rgba(129, 140, 248, 0.18) 0%, rgba(167, 139, 250, 0.06) 56%, rgba(255, 255, 255, 0) 100%);
+}
+
+.onboarding-reading-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.onboarding-progress-track {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.onboarding-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6366f1 0%, #7c3aed 55%, #d946ef 100%);
+  box-shadow: 0 0 16px rgba(124, 58, 237, 0.38);
+  transition: width 280ms ease;
+}
+
+.onboarding-highlight-card {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.onboarding-highlight-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.12);
+}
+
+.onboarding-tip-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.onboarding-tip-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(120deg, rgba(16, 185, 129, 0.16) 0%, rgba(16, 185, 129, 0) 44%, rgba(255, 255, 255, 0.12) 100%);
+}
+
+.onboarding-tip-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .night-mode .menu-content-surface::before {
