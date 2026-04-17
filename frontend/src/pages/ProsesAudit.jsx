@@ -456,6 +456,11 @@ const ProsesAudit = () => {
   const handleTahap11ReviewDecision = async (reviewApproved) => {
     if (!selectedKonsultasi?.id) return;
 
+    if (selectedKonsultasi.statusRaw === 'completed') {
+      alert('Proses sudah diarsipkan, keputusan review tidak dapat diubah.');
+      return;
+    }
+
     const konsultasiId = selectedKonsultasi.id;
     const latestDraftNote = reviewTahap11DraftNotes[konsultasiId] || '';
     const existingReviewHistory = selectedKonsultasi.lhkReviewNote || '';
@@ -494,6 +499,11 @@ const ProsesAudit = () => {
 
   const handleTahap8ReviewDecision = async (reviewApproved) => {
     if (!selectedKonsultasi?.id) return;
+
+    if (selectedKonsultasi.statusRaw === 'completed') {
+      alert('Proses sudah diarsipkan, keputusan review tidak dapat diubah.');
+      return;
+    }
 
     const konsultasiId = selectedKonsultasi.id;
     const latestDraftNote = reviewTahap8DraftNotes[konsultasiId] || '';
@@ -902,8 +912,10 @@ const ProsesAudit = () => {
               const hasFile = !!file;
               const canUploadThis = canUploadInProcess(selectedTahap);
               const canViewThis = canViewInProcess(selectedTahap);
-              const canManageReviewTahap8 = userRole !== 'auditee' && !isKSPI && selectedKonsultasi?.statusRaw !== 'completed';
-              const canManageReviewTahap11 = userRole !== 'auditee' && !isKSPI && selectedKonsultasi?.statusRaw !== 'completed';
+              const canManageReviewByRole = userRole !== 'auditee' && !isKSPI;
+              const isProcessArchived = selectedKonsultasi?.statusRaw === 'completed';
+              const canManageReviewTahap8 = canManageReviewByRole;
+              const canManageReviewTahap11 = canManageReviewByRole;
               const isTahapReviewKKA = selectedTahap === TAHAP_REVIEW_KKA;
               const isTahapDraftLaporan = selectedTahap === TAHAP_DRAFT_LHK;
               const isTahapReviewLaporan = selectedTahap === TAHAP_REVIEW_LHK;
@@ -1020,8 +1032,9 @@ const ProsesAudit = () => {
                                   onChange={(e) => {
                                     setReviewTahap8DraftNotes((prev) => ({ ...prev, [selectedKonsultasi.id]: e.target.value }));
                                   }}
+                                  readOnly={isProcessArchived}
                                   placeholder="Masukkan catatan review KKA terbaru. Contoh: Perkuat bukti analisa risiko pada bagian 2."
-                                  className="w-full p-3 border border-slate-200 rounded-lg bg-slate-50 text-slate-700 placeholder-slate-400 text-xs resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300"
+                                  className={`w-full p-3 border rounded-lg text-xs resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 ${isProcessArchived ? 'border-slate-200 bg-slate-100 text-slate-500 cursor-not-allowed' : 'border-slate-200 bg-slate-50 text-slate-700 placeholder-slate-400'}`}
                                 />
                                 <p className="text-[11px] text-slate-500 mt-2">
                                   Format otomatis saat disimpan: Review 1. ..., Review 2. ..., dan seterusnya.
@@ -1038,7 +1051,7 @@ const ProsesAudit = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleTahap8ReviewDecision(false)}
-                                  disabled={savingReviewTahap8Decision || !canSubmitReviewTahap8}
+                                  disabled={isProcessArchived || savingReviewTahap8Decision || !canSubmitReviewTahap8}
                                   className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${isKkaReviewOff ? 'bg-red-500 text-white border-red-500' : 'bg-white text-red-600 border-red-200 hover:bg-red-50'}`}
                                 >
                                   Review
@@ -1046,7 +1059,7 @@ const ProsesAudit = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleTahap8ReviewDecision(true)}
-                                  disabled={savingReviewTahap8Decision}
+                                  disabled={isProcessArchived || savingReviewTahap8Decision}
                                   className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${isKkaReviewOn ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50'}`}
                                 >
                                   Finalisasi
@@ -1055,6 +1068,12 @@ const ProsesAudit = () => {
                             ) : (
                               <p className="text-[11px] text-slate-500 mt-3">
                                 Keputusan Review/Finalisasi Tahap 8 dikelola oleh auditor/manajemen.
+                              </p>
+                            )}
+
+                            {canManageReviewTahap8 && isProcessArchived && (
+                              <p className="text-[11px] text-amber-600 mt-3">
+                                Proses ini sudah diarsipkan, tombol Review/Finalisasi ditampilkan namun tidak dapat diubah.
                               </p>
                             )}
                           </div>
@@ -1095,8 +1114,9 @@ const ProsesAudit = () => {
                                   onChange={(e) => {
                                     setReviewTahap11DraftNotes((prev) => ({ ...prev, [selectedKonsultasi.id]: e.target.value }));
                                   }}
+                                  readOnly={isProcessArchived}
                                   placeholder="Masukkan catatan review terbaru. Contoh: Mohon perbaiki lampiran halaman 3."
-                                  className="w-full p-3 border border-slate-200 rounded-lg bg-slate-50 text-slate-700 placeholder-slate-400 text-xs resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300"
+                                  className={`w-full p-3 border rounded-lg text-xs resize-y min-h-[110px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 ${isProcessArchived ? 'border-slate-200 bg-slate-100 text-slate-500 cursor-not-allowed' : 'border-slate-200 bg-slate-50 text-slate-700 placeholder-slate-400'}`}
                                 />
                                 <p className="text-[11px] text-slate-500 mt-2">
                                   Format otomatis saat disimpan: Review 1. ..., Review 2. ..., dan seterusnya.
@@ -1113,7 +1133,7 @@ const ProsesAudit = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleTahap11ReviewDecision(false)}
-                                  disabled={savingReviewDecision || !canSubmitReviewTahap11}
+                                  disabled={isProcessArchived || savingReviewDecision || !canSubmitReviewTahap11}
                                   className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${isReviewOff ? 'bg-red-500 text-white border-red-500' : 'bg-white text-red-600 border-red-200 hover:bg-red-50'}`}
                                 >
                                   Review
@@ -1121,7 +1141,7 @@ const ProsesAudit = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleTahap11ReviewDecision(true)}
-                                  disabled={savingReviewDecision}
+                                  disabled={isProcessArchived || savingReviewDecision}
                                   className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${isReviewOn ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50'}`}
                                 >
                                   Finalisasi
@@ -1130,6 +1150,12 @@ const ProsesAudit = () => {
                             ) : (
                               <p className="text-[11px] text-slate-500 mt-3">
                                 Keputusan Review/Finalisasi Tahap 11 dikelola oleh auditor/manajemen.
+                              </p>
+                            )}
+
+                            {canManageReviewTahap11 && isProcessArchived && (
+                              <p className="text-[11px] text-amber-600 mt-3">
+                                Proses ini sudah diarsipkan, tombol Review/Finalisasi ditampilkan namun tidak dapat diubah.
                               </p>
                             )}
                           </div>

@@ -356,7 +356,7 @@ const Laporan = () => {
       .map((k) => k.id);
 
     if (targetIds.length === 0) {
-      alert('Tidak ada laporan review (ON) yang dapat diarsipkan pada filter saat ini.');
+      alert('Tidak ada laporan review yang dapat diarsipkan pada filter saat ini.');
       return;
     }
 
@@ -515,32 +515,36 @@ const Laporan = () => {
       <input ref={uploadFileRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,image/*" onChange={handleFileSelect} className="hidden" />
 
       {/* ── Header ── */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 p-6 text-white shadow-xl">
-        <div className="absolute top-0 right-0 w-56 h-56 bg-indigo-500/15 rounded-full -mr-16 -mt-16" />
-        <div className="absolute bottom-0 left-0 w-40 h-40 bg-purple-500/10 rounded-full -ml-12 -mb-12" />
-        <div className="relative z-10 flex items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-6 h-6 bg-white/10 rounded-lg flex items-center justify-center"><IconFileAlt className="w-3.5 h-3.5 text-indigo-300" /></div>
-              <span className="text-indigo-300 text-[10px] font-medium uppercase tracking-wider">Laporan Hasil Konsultasi</span>
+      <div className="relative overflow-hidden rounded-3xl border border-violet-400/20 bg-gradient-to-br from-[#1f0a4f] via-[#3b0f89] to-[#111a47] p-6 text-white shadow-[0_18px_45px_-22px_rgba(49,13,125,0.95)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(129,140,248,0.35),transparent_40%),radial-gradient(circle_at_88%_14%,rgba(244,114,182,0.24),transparent_34%),linear-gradient(120deg,rgba(255,255,255,0.08),transparent_45%)]" />
+        <div className="absolute -right-16 -top-20 h-60 w-60 rounded-full bg-fuchsia-400/20 blur-3xl" />
+        <div className="absolute -left-16 -bottom-20 h-56 w-56 rounded-full bg-indigo-300/20 blur-3xl" />
+        <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/25 to-transparent" />
+        <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-xl">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5">
+              <div className="w-6 h-6 bg-white/10 rounded-lg flex items-center justify-center">
+                <IconFileAlt className="w-3.5 h-3.5 text-indigo-200" />
+              </div>
+              <span className="text-indigo-100 text-[10px] font-semibold uppercase tracking-wider">Laporan Hasil Konsultasi</span>
             </div>
-            <h1 className="text-xl font-bold tracking-tight">{isKSPI ? 'Monitoring Draft & Review LHK' : 'Kelola Draft & Review LHK'}</h1>
-            <p className="text-indigo-200/50 text-[11px] mt-0.5 max-w-md">
+            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight leading-tight">{isKSPI ? 'Monitoring Draft & Review LHK' : 'Kelola Draft & Review LHK'}</h1>
+            <p className="text-indigo-100/80 text-[11px] md:text-xs mt-1.5 max-w-lg">
               {isKSPI ? 'Lihat dan download dokumen Draft/Review LHK dari seluruh biro auditor.' : 'Upload Draft (Tahap 10), lanjut Review (Tahap 11), lalu arsipkan.'}
             </p>
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-2.5">
             {[
-              { label: 'Total',    value: stats.total,    color: 'text-white' },
-              { label: 'Draft',    value: stats.inDraft,   color: 'text-blue-300' },
-              { label: 'Review',   value: stats.inReview,  color: 'text-amber-300' },
-              { label: 'Arsip',    value: stats.archived,  color: 'text-emerald-300' },
+              { label: 'Total',  value: stats.total,    color: 'text-white' },
+              { label: 'Draft',  value: stats.inDraft,  color: 'text-cyan-200' },
+              { label: 'Review', value: stats.inReview, color: 'text-amber-200' },
+              { label: 'Arsip',  value: stats.archived, color: 'text-emerald-200' },
             ].map((s, i) => (
-              <div key={i} className="text-center px-3.5 py-1.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
-                <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
-                <p className="text-[8px] text-indigo-200 uppercase tracking-widest font-semibold">{s.label}</p>
+              <div key={i} className="min-w-[72px] rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-center backdrop-blur-sm">
+                <p className={`text-xl leading-tight font-black ${s.color}`}>{s.value}</p>
+                <p className="text-[9px] text-indigo-100/85 uppercase tracking-[0.12em] font-semibold mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>
@@ -601,7 +605,7 @@ const Laporan = () => {
               onClick={handleBulkArchive}
               className="px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold hover:bg-emerald-100 transition-colors"
             >
-              Arsipkan Semua Review (ON)
+              Arsipkan Semua Review
             </button>
           )}
           <span className="text-[11px] text-slate-400 font-medium ml-auto">{filteredData.length} konsultasi</span>
