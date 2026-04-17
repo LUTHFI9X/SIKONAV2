@@ -91,6 +91,18 @@ const Laporan = () => {
     return mime === 'application/pdf' || mime.startsWith('image/');
   };
 
+  const formatPerihalFromSubject = (subject = '', tahunAudit = '') => {
+    const normalizedSubject = (subject || '').trim();
+    if (normalizedSubject) {
+      return /^perihal\s+/i.test(normalizedSubject)
+        ? normalizedSubject
+        : `Perihal ${normalizedSubject}`;
+    }
+
+    const fallback = `Audit ${tahunAudit || ''}`.trim();
+    return fallback ? `Perihal ${fallback}` : 'Perihal Konsultasi Audit';
+  };
+
   const validateLhkFile = (file) => {
     if (!file) return { ok: false, message: 'File tidak ditemukan.' };
 
@@ -122,6 +134,7 @@ const Laporan = () => {
         namaAuditee: p.auditee?.name || '-',
         unitKerja: p.auditee?.department || '-',
         kategori: p.biro || p.auditor?.biro || '-',
+        perihal: formatPerihalFromSubject(p.conversation?.subject, p.tahun_audit),
       }));
 
       const mappedLaporan = {};
@@ -141,7 +154,7 @@ const Laporan = () => {
           fileSize: targetDoc.file_size ? `${(targetDoc.file_size / 1024 / 1024).toFixed(1)} MB` : '-',
           uploadedAt: targetDoc.created_at ? new Date(targetDoc.created_at).toLocaleString('id-ID') : (p.updated_at ? new Date(p.updated_at).toLocaleString('id-ID') : '-'),
           nomorLHK: '',
-          perihal: `Audit ${p.tahun_audit || ''}`.trim(),
+          perihal: formatPerihalFromSubject(p.conversation?.subject, p.tahun_audit),
           catatan: p.catatan_auditor || '',
           reviewNote: p.lhk_review_note || '',
           reviewApproved: p.lhk_review_approved,
@@ -226,10 +239,11 @@ const Laporan = () => {
 
   const openUploadModal = (id) => {
     const existing = laporan[id];
+    const processInfo = konsultasiProses.find((item) => item.id === id);
     setUploadModal(id);
     setUploadForm({
       nomorLHK: existing?.nomorLHK || '',
-      perihal:  existing?.perihal  || '',
+      perihal:  existing?.perihal  || processInfo?.perihal || '',
       catatan:  existing?.catatan  || '',
     });
     setSelectedFile(null);
@@ -988,9 +1002,10 @@ const Laporan = () => {
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Perihal <span className="text-red-400">*</span></label>
-                  <input type="text" value={uploadForm.perihal} onChange={(e) => setUploadForm(p => ({ ...p, perihal: e.target.value }))} placeholder="contoh: Konsultasi Tata Kelola Aset"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Perihal <span className="text-slate-400 font-normal">(otomatis dari Subject / Judul)</span></label>
+                  <input type="text" value={uploadForm.perihal} readOnly
+                    className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 cursor-not-allowed" />
+                  <p className="text-[10px] text-slate-400 mt-1">Mengikuti Subject / Judul pada menu Status Konsultasi.</p>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1.5">Catatan <span className="text-slate-400 font-normal">(opsional)</span></label>
