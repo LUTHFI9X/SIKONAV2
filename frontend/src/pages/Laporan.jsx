@@ -273,23 +273,38 @@ const Laporan = () => {
 
   const handleSubmitUpload = async () => {
     if (!selectedFile || !uploadModal) return;
-    if (laporan[uploadModal]?.status === 'arsip') {
+    const existingLaporan = laporan[uploadModal];
+    if (existingLaporan?.status === 'arsip') {
       alert('Dokumen arsip tidak dapat diganti.');
       return;
     }
     if (!uploadForm.nomorLHK.trim()) { alert('Nomor LHK wajib diisi.'); return; }
     if (!uploadForm.perihal.trim())  { alert('Perihal wajib diisi.'); return; }
+
+    const stageBeforeUpload = existingLaporan?.status === 'review' ? 'review' : 'draft';
+    const reviewNoteBeforeUpload = existingLaporan?.reviewNote || '';
+    const reviewApprovedBeforeUpload = existingLaporan?.reviewApproved;
+
     try {
       await auditAPI.uploadDokumen(uploadModal, selectedFile, DRAFT_LHK_TAHAP);
-      const stageAfterUpload = laporan[uploadModal]?.status === 'review' ? 'review' : 'draft';
-      await auditAPI.updateLhkStage(uploadModal, stageAfterUpload);
+
+      if (stageBeforeUpload === 'review') {
+        if (reviewApprovedBeforeUpload === true || reviewApprovedBeforeUpload === false || reviewNoteBeforeUpload.trim()) {
+          await auditAPI.updateLhkReview(uploadModal, reviewNoteBeforeUpload, reviewApprovedBeforeUpload === true);
+        } else {
+          await auditAPI.updateLhkStage(uploadModal, 'review');
+        }
+      } else {
+        await auditAPI.updateLhkStage(uploadModal, 'draft');
+      }
+
       if (uploadForm.catatan.trim()) {
         await auditAPI.updateCatatan(uploadModal, uploadForm.catatan.trim());
       }
       await auditAPI.updateStatus(uploadModal, 'in_progress');
       await fetchData();
       setUploadModal(null); setSelectedFile(null);
-      setFlashMessage(stageAfterUpload === 'review' ? 'Dokumen review berhasil diperbarui.' : 'Draft LHK berhasil diunggah.');
+      setFlashMessage(stageBeforeUpload === 'review' ? 'Dokumen review berhasil diperbarui dan tetap di Tahap 11.' : 'Draft LHK berhasil diunggah.');
     } catch (error) {
       console.error('Upload draft gagal:', error);
       const status = error?.response?.status;

@@ -216,12 +216,18 @@ class AuditProcessController extends Controller
 
         $auditProcess->update(['dokumen_path' => $path]);
 
-        if ($tahapNo === self::TAHAP_DRAFT_LHK && $auditProcess->lhk_stage !== 'review') {
-            $auditProcess->update([
-                'lhk_stage' => 'draft',
-                'lhk_review_approved' => null,
-                'lhk_review_note' => null,
-            ]);
+        if ($tahapNo === self::TAHAP_DRAFT_LHK) {
+            $isReviewFlow = $auditProcess->lhk_stage === 'review'
+                || $auditProcess->lhk_review_approved !== null
+                || !empty($auditProcess->lhk_review_note);
+
+            if (!$isReviewFlow) {
+                $auditProcess->update([
+                    'lhk_stage' => 'draft',
+                    'lhk_review_approved' => null,
+                    'lhk_review_note' => null,
+                ]);
+            }
         }
 
         $tahapField = 'tahap_' . $tahapNo . '_' . $this->getTahapName($tahapNo);
