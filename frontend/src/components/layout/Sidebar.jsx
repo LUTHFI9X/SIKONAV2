@@ -154,7 +154,7 @@ const Sidebar = ({ mobileOpen = false, onClose }) => {
           type="button"
           onClick={closeMobileSidebar}
           aria-label="Tutup sidebar"
-          className="lg:hidden absolute top-3 right-3 w-8 h-8 rounded-lg border border-violet-400/25 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20 flex items-center justify-center"
+          className="lg:hidden absolute top-3 right-3 w-8 h-8 rounded-lg border border-amber-300/25 bg-emerald-500/10 text-amber-100 hover:bg-emerald-500/20 flex items-center justify-center"
         >
           <IconX className="w-4 h-4" />
         </button>
@@ -170,11 +170,11 @@ const Sidebar = ({ mobileOpen = false, onClose }) => {
           />
           <div className="min-w-0">
             <SikonaWordmark size="text-xl" />
-            <p className="text-violet-400/70 text-[10px] font-semibold tracking-wider mt-0.5">Sistem Konsultasi Audit</p>
+            <p className="text-amber-200/70 text-[10px] font-semibold tracking-wider mt-0.5">Sistem Konsultasi Audit</p>
           </div>
         </div>
         {/* Separator line with glow */}
-        <div className="mt-5 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent"></div>
+        <div className="mt-5 h-px bg-gradient-to-r from-transparent via-amber-300/25 to-transparent"></div>
       </div>
       
       {/* Navigation */}
@@ -182,10 +182,10 @@ const Sidebar = ({ mobileOpen = false, onClose }) => {
         {mainMenuItems.map((item, index) => (
           <div key={item.path}>
             {index === 1 && (
-              <div className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-violet-400/50 select-none flex items-center gap-2">
-                <span className="flex-1 h-px bg-gradient-to-r from-violet-500/20 to-transparent"></span>
+              <div className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-amber-200/45 select-none flex items-center gap-2">
+                <span className="flex-1 h-px bg-gradient-to-r from-emerald-400/20 to-transparent"></span>
                 <span>{t('menu.mainMenu', 'Menu Utama')}</span>
-                <span className="flex-1 h-px bg-gradient-to-l from-violet-500/20 to-transparent"></span>
+                <span className="flex-1 h-px bg-gradient-to-l from-emerald-400/20 to-transparent"></span>
               </div>
             )}
             <NavLink
@@ -209,10 +209,10 @@ const Sidebar = ({ mobileOpen = false, onClose }) => {
         {/* Admin Menu Section */}
         {adminMenuItems.length > 0 && (
           <>
-            <div className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-violet-400/50 select-none flex items-center gap-2">
-              <span className="flex-1 h-px bg-gradient-to-r from-violet-500/20 to-transparent"></span>
+            <div className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-amber-200/45 select-none flex items-center gap-2">
+              <span className="flex-1 h-px bg-gradient-to-r from-emerald-400/20 to-transparent"></span>
               <span>{t('menu.systemMenu', 'Kelola Sistem')}</span>
-              <span className="flex-1 h-px bg-gradient-to-l from-violet-500/20 to-transparent"></span>
+              <span className="flex-1 h-px bg-gradient-to-l from-emerald-400/20 to-transparent"></span>
             </div>
             {adminMenuItems.map((item) => (
               <NavLink
@@ -232,15 +232,15 @@ const Sidebar = ({ mobileOpen = false, onClose }) => {
       </nav>
       
       {/* Bottom Section */}
-      <div className="p-4 border-t border-violet-500/10 space-y-1 relative">
+      <div className="p-4 border-t border-emerald-400/10 space-y-1 relative">
         {/* Top glow line */}
-        <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent"></div>
+        <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-amber-300/25 to-transparent"></div>
         
         {(currentUser?.role === 'auditor' || currentUser?.role === 'admin' || (currentUser?.role === 'manajemen' && currentUser?.sub_role === 'admin')) && (
           <NavLink 
             to="/profile" 
             onClick={closeMobileSidebar}
-            className={({ isActive }) => `flex items-center gap-3 px-4 py-3 text-violet-300 hover:bg-violet-500/10 hover:text-white rounded-xl cursor-pointer transition-all duration-300 font-semibold text-sm group ${isActive ? 'bg-violet-500/10 text-white' : ''}`}
+            className={({ isActive }) => `flex items-center gap-3 px-4 py-3 text-emerald-100/90 hover:bg-emerald-500/10 hover:text-amber-100 rounded-xl cursor-pointer transition-all duration-300 font-semibold text-sm group ${isActive ? 'bg-emerald-500/15 text-amber-100' : ''}`}
           >
             <IconGear className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
             <span>{t('common.profileSettings', 'Pengaturan Profil')}</span>
