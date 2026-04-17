@@ -141,16 +141,16 @@ const Laporan = () => {
       const mappedLaporan = {};
       processes.forEach((p) => {
         const draftDoc = p.documents?.find((doc) => Number(doc.tahap_no) === DRAFT_LHK_TAHAP);
-        const fallbackDoc = p.documents?.[p.documents.length - 1];
-        const targetDoc = draftDoc || fallbackDoc;
-        if (!targetDoc) return;
+        if (!draftDoc) return;
+
+        const targetDoc = draftDoc;
 
         const lhkStage = p.lhk_stage === 'review' ? 'review' : 'draft';
         const mappedStatus = p.status === 'completed' ? 'arsip' : lhkStage;
 
         mappedLaporan[p.id] = {
           auditProcessId: p.id,
-          tahapNo: Number(targetDoc.tahap_no),
+          tahapNo: DRAFT_LHK_TAHAP,
           fileName: targetDoc.file_name || p.dokumen_path?.split('/').pop() || 'draft-lhk.pdf',
           fileSize: targetDoc.file_size ? `${(targetDoc.file_size / 1024 / 1024).toFixed(1)} MB` : '-',
           uploadedAt: targetDoc.created_at ? new Date(targetDoc.created_at).toLocaleString('id-ID') : (p.updated_at ? new Date(p.updated_at).toLocaleString('id-ID') : '-'),
@@ -421,7 +421,26 @@ const Laporan = () => {
     if (!fileInfo?.auditProcessId || !fileInfo?.tahapNo) return;
 
     try {
-      const response = await auditAPI.downloadDokumen(fileInfo.auditProcessId, fileInfo.tahapNo);
+      let response = null;
+      const candidateTahap = [Number(fileInfo.tahapNo), DRAFT_LHK_TAHAP].filter((v, idx, arr) => Number.isFinite(v) && arr.indexOf(v) === idx);
+
+      for (const tahapNo of candidateTahap) {
+        try {
+          response = await auditAPI.downloadDokumen(fileInfo.auditProcessId, tahapNo);
+          break;
+        } catch (downloadError) {
+          const status = downloadError?.response?.status;
+          const shouldRetry = (status === 403 || status === 404) && tahapNo !== DRAFT_LHK_TAHAP;
+          if (!shouldRetry) {
+            throw downloadError;
+          }
+        }
+      }
+
+      if (!response) {
+        throw new Error('Dokumen tidak tersedia.');
+      }
+
       const contentType = response.headers['content-type'] || 'application/octet-stream';
       const fileBlob = new Blob([response.data], { type: contentType });
       const url = window.URL.createObjectURL(fileBlob);
@@ -467,7 +486,26 @@ const Laporan = () => {
       setPreviewUrl('');
 
       try {
-        const response = await auditAPI.downloadDokumen(previewFile.auditProcessId, previewFile.tahapNo);
+        let response = null;
+        const candidateTahap = [Number(previewFile.tahapNo), DRAFT_LHK_TAHAP].filter((v, idx, arr) => Number.isFinite(v) && arr.indexOf(v) === idx);
+
+        for (const tahapNo of candidateTahap) {
+          try {
+            response = await auditAPI.downloadDokumen(previewFile.auditProcessId, tahapNo);
+            break;
+          } catch (previewFetchError) {
+            const status = previewFetchError?.response?.status;
+            const shouldRetry = (status === 403 || status === 404) && tahapNo !== DRAFT_LHK_TAHAP;
+            if (!shouldRetry) {
+              throw previewFetchError;
+            }
+          }
+        }
+
+        if (!response) {
+          throw new Error('Dokumen tidak tersedia.');
+        }
+
         const headerType = response.headers['content-type'] || '';
         const guessedType = inferMimeType(previewFile.fileName);
         const contentType = !headerType || headerType === 'application/octet-stream' ? guessedType : headerType;

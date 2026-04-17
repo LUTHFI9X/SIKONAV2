@@ -22,6 +22,7 @@ const ProsesAudit = () => {
   const TAHAP_REVIEW_KKA = 8;
   const TAHAP_DRAFT_LHK = 10;
   const TAHAP_REVIEW_LHK = 11;
+  const TAHAP_FINALISASI_LHK = 12;
   const TAHAP_KEPUTUSAN = 2;
   const TAHAP_AUDITEE_UPLOAD = [1, 6];
   const TAHAP_AUDITEE_VIEW = [1, 2, 6];
@@ -66,13 +67,6 @@ const ProsesAudit = () => {
           };
           return acc;
         }, {});
-
-        if (p.status === 'completed' && !stagedDocs[13]) {
-          stagedDocs[13] = {
-            name: 'Distribusi Selesai (Status Completed)',
-            size: 'Sistem',
-          };
-        }
 
         mappedFiles[p.id] = stagedDocs;
       });
@@ -565,30 +559,34 @@ const ProsesAudit = () => {
 
   return (
     <div className="proses-audit-page space-y-6 animate-fadeInUp pb-8">
-      {/* Header - Professional Dark Theme */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 p-6 text-white shadow-xl">
-        <div className="absolute top-0 right-0 w-56 h-56 bg-indigo-500/15 rounded-full -mr-16 -mt-16"></div>
-        <div className="absolute bottom-0 left-0 w-40 h-40 bg-purple-500/10 rounded-full -ml-12 -mb-12"></div>
-        <div className="relative z-10 flex items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
+      {/* Header */}
+      <div className="relative overflow-hidden rounded-3xl border border-violet-400/20 bg-gradient-to-br from-[#1f0a4f] via-[#3b0f89] to-[#111a47] p-6 text-white shadow-[0_18px_45px_-22px_rgba(49,13,125,0.95)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(129,140,248,0.35),transparent_40%),radial-gradient(circle_at_88%_14%,rgba(244,114,182,0.24),transparent_34%),linear-gradient(120deg,rgba(255,255,255,0.08),transparent_45%)]" />
+        <div className="absolute -right-16 -top-20 h-60 w-60 rounded-full bg-fuchsia-400/20 blur-3xl" />
+        <div className="absolute -left-16 -bottom-20 h-56 w-56 rounded-full bg-indigo-300/20 blur-3xl" />
+        <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/25 to-transparent" />
+        <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-xl">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5">
               <div className="w-6 h-6 bg-white/10 rounded-lg flex items-center justify-center">
-                <IconComments className="w-3.5 h-3.5 text-indigo-300" />
+                <IconComments className="w-3.5 h-3.5 text-indigo-200" />
               </div>
-              <span className="text-indigo-300 text-[10px] font-medium uppercase tracking-wider">Proses Konsultasi</span>
+              <span className="text-indigo-100 text-[10px] font-semibold uppercase tracking-wider">Proses Konsultasi</span>
             </div>
-            <h1 className="text-xl font-bold tracking-tight">Proses Konsultasi Audit</h1>
-            <p className="text-indigo-200/50 text-[11px] mt-0.5">Pantau dan kelola seluruh tahapan proses konsultasi audit</p>
+            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight leading-tight">Proses Konsultasi Audit</h1>
+            <p className="text-indigo-100/80 text-[11px] md:text-xs mt-1.5 max-w-lg">Pantau dan kelola seluruh tahapan proses konsultasi audit</p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="text-center px-3.5 py-1.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
-              <p className="text-lg font-bold text-white">{overallStats.total}</p>
-              <p className="text-[8px] text-indigo-200 uppercase tracking-widest font-semibold">Konsultasi</p>
-            </div>
-            <div className="text-center px-3.5 py-1.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
-              <p className="text-lg font-bold text-emerald-300">{overallStats.avgProgress}%</p>
-              <p className="text-[8px] text-indigo-200 uppercase tracking-widest font-semibold">Rata-rata</p>
-            </div>
+
+          <div className="grid grid-cols-2 gap-2 md:gap-2.5">
+            {[
+              { label: 'Konsultasi', value: overallStats.total, color: 'text-white' },
+              { label: 'Rata-rata', value: `${overallStats.avgProgress}%`, color: 'text-emerald-200' },
+            ].map((s, i) => (
+              <div key={i} className="min-w-[92px] rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-center backdrop-blur-sm">
+                <p className={`text-xl leading-tight font-black ${s.color}`}>{s.value}</p>
+                <p className="text-[9px] text-indigo-100/85 uppercase tracking-[0.12em] font-semibold mt-0.5">{s.label}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -1200,9 +1198,18 @@ const ProsesAudit = () => {
                                   </button>
                                 )}
                                 {canUploadThis && (
-                                  <button onClick={() => handleFileDelete(selectedTahap)} className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-red-500 hover:bg-red-50 hover:border-red-200 transition-all flex items-center gap-1.5">
-                                    <IconTrash className="w-3.5 h-3.5" /> Hapus
-                                  </button>
+                                  <>
+                                    {selectedTahap === TAHAP_ANALISA_KKA ? (
+                                      <button onClick={() => triggerFileInput(selectedTahap)} className="px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs font-semibold text-amber-600 hover:bg-amber-100 transition-all flex items-center gap-1.5">
+                                        <IconCloudUpload className="w-3.5 h-3.5" /> Ganti File
+                                      </button>
+                                    ) : (
+                                      <button onClick={() => handleFileDelete(selectedTahap)} className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-red-500 hover:bg-red-50 hover:border-red-200 transition-all flex items-center gap-1.5">
+                                        <IconTrash className="w-3.5 h-3.5" /> Hapus
+                                      </button>
+                                    )}
+                                    <input type="file" ref={el => fileInputRefs.current[selectedTahap] = el} onChange={(e) => handleFileUpload(selectedTahap, e)} className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,image/*" />
+                                  </>
                                 )}
                               </div>
                             ) : (
@@ -1212,18 +1219,25 @@ const ProsesAudit = () => {
                             )}
                           </div>
                         ) : canUploadThis ? (
-                          <div
-                            onClick={() => triggerFileInput(selectedTahap)}
-                            className="rounded-xl border-2 border-dashed border-slate-300 bg-white p-6 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group"
-                          >
-                            <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-indigo-100 transition-colors">
-                              <IconCloudUpload className="w-6 h-6 text-indigo-500" />
+                          <>
+                            <div
+                              onClick={() => triggerFileInput(selectedTahap)}
+                              className="rounded-xl border-2 border-dashed border-slate-300 bg-white p-6 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group"
+                            >
+                              <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-indigo-100 transition-colors">
+                                <IconCloudUpload className="w-6 h-6 text-indigo-500" />
+                              </div>
+                              <p className="text-sm font-bold text-slate-700 mb-1">Upload Dokumen</p>
+                              <p className="text-[11px] text-slate-400">PDF, DOC, DOCX, atau gambar (maks. 50MB)</p>
+                              <p className="text-[10px] text-indigo-500 font-semibold mt-2">Klik untuk memilih file</p>
+                              <input type="file" ref={el => fileInputRefs.current[selectedTahap] = el} onChange={(e) => handleFileUpload(selectedTahap, e)} className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,image/*" />
                             </div>
-                            <p className="text-sm font-bold text-slate-700 mb-1">Upload Dokumen</p>
-                            <p className="text-[11px] text-slate-400">PDF, DOC, DOCX, atau gambar (maks. 50MB)</p>
-                            <p className="text-[10px] text-indigo-500 font-semibold mt-2">Klik untuk memilih file</p>
-                            <input type="file" ref={el => fileInputRefs.current[selectedTahap] = el} onChange={(e) => handleFileUpload(selectedTahap, e)} className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,image/*" />
-                          </div>
+                            {selectedTahap === TAHAP_FINALISASI_LHK && (
+                              <p className="text-[11px] text-amber-600 mt-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                                Upload File jika Konsultasi ditolak.
+                              </p>
+                            )}
+                          </>
                         ) : (
                           <div className="rounded-xl border border-slate-200 bg-white p-6 text-center">
                             <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center mx-auto mb-3">

@@ -401,33 +401,34 @@ const StatusAudit = () => {
   return (
     <div className="status-audit-page space-y-6 animate-fadeInUp">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 p-6 text-white shadow-xl">
-        <div className="absolute top-0 right-0 w-56 h-56 bg-indigo-500/15 rounded-full -mr-16 -mt-16"></div>
-        <div className="absolute bottom-0 left-0 w-40 h-40 bg-purple-500/10 rounded-full -ml-12 -mb-12"></div>
-        <div className="relative z-10 flex items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
+      <div className="relative overflow-hidden rounded-3xl border border-violet-400/20 bg-gradient-to-br from-[#1f0a4f] via-[#3b0f89] to-[#111a47] p-6 text-white shadow-[0_18px_45px_-22px_rgba(49,13,125,0.95)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(129,140,248,0.35),transparent_40%),radial-gradient(circle_at_88%_14%,rgba(244,114,182,0.24),transparent_34%),linear-gradient(120deg,rgba(255,255,255,0.08),transparent_45%)]" />
+        <div className="absolute -right-16 -top-20 h-60 w-60 rounded-full bg-fuchsia-400/20 blur-3xl" />
+        <div className="absolute -left-16 -bottom-20 h-56 w-56 rounded-full bg-indigo-300/20 blur-3xl" />
+        <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/25 to-transparent" />
+        <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-xl">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5">
               <div className="w-6 h-6 bg-white/10 rounded-lg flex items-center justify-center">
-                <IconChartPie className="w-3.5 h-3.5 text-indigo-300" />
+                <IconChartPie className="w-3.5 h-3.5 text-indigo-200" />
               </div>
-              <span className="text-indigo-300 text-[10px] font-medium uppercase tracking-wider">Monitoring</span>
+              <span className="text-indigo-100 text-[10px] font-semibold uppercase tracking-wider">Monitoring</span>
             </div>
-            <h1 className="text-xl font-bold tracking-tight">Status Konsultasi</h1>
-            <p className="text-indigo-200/50 text-[11px] mt-0.5">Pantau status seluruh proses konsultasi</p>
+            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight leading-tight">Status Konsultasi</h1>
+            <p className="text-indigo-100/80 text-[11px] md:text-xs mt-1.5 max-w-lg">Pantau status seluruh proses konsultasi</p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="text-center px-3.5 py-1.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
-              <p className="text-lg font-bold text-white">{biroFilteredAudits.length}</p>
-              <p className="text-[8px] text-indigo-200 uppercase tracking-widest font-semibold">Total</p>
-            </div>
-            <div className="text-center px-3.5 py-1.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
-              <p className="text-lg font-bold text-emerald-300">{biroFilteredAudits.filter(a => a.status === 'selesai').length}</p>
-              <p className="text-[8px] text-indigo-200 uppercase tracking-widest font-semibold">Selesai</p>
-            </div>
-            <div className="text-center px-3.5 py-1.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
-              <p className="text-lg font-bold text-amber-300">{biroFilteredAudits.filter(a => a.status === 'menunggu').length}</p>
-              <p className="text-[8px] text-indigo-200 uppercase tracking-widest font-semibold">Menunggu</p>
-            </div>
+
+          <div className="grid grid-cols-3 gap-2 md:gap-2.5">
+            {[
+              { label: 'Total', value: biroFilteredAudits.length, color: 'text-white' },
+              { label: 'Selesai', value: biroFilteredAudits.filter(a => a.status === 'selesai').length, color: 'text-emerald-200' },
+              { label: 'Menunggu', value: biroFilteredAudits.filter(a => a.status === 'menunggu').length, color: 'text-amber-200' },
+            ].map((s, i) => (
+              <div key={i} className="min-w-[92px] rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-center backdrop-blur-sm">
+                <p className={`text-xl leading-tight font-black ${s.color}`}>{s.value}</p>
+                <p className="text-[9px] text-indigo-100/85 uppercase tracking-[0.12em] font-semibold mt-0.5">{s.label}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
