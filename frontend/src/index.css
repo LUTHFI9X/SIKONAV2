@@ -1373,6 +1373,67 @@ input:checked + .slider:before {
   overflow: hidden; 
   background: transparent; 
 }
+
+.menu-content-surface {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(108% 78% at 14% -8%, rgba(99, 102, 241, 0.14) 0%, transparent 56%),
+    radial-gradient(112% 84% at 100% 0%, rgba(168, 85, 247, 0.12) 0%, transparent 60%),
+    linear-gradient(180deg, rgba(243, 245, 255, 0.86) 0%, rgba(244, 246, 255, 0.68) 48%, rgba(247, 249, 255, 0.78) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.55);
+}
+
+.menu-content-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(transparent 95%, rgba(148, 163, 184, 0.08) 95%),
+    linear-gradient(90deg, transparent 95%, rgba(148, 163, 184, 0.07) 95%);
+  background-size: 36px 36px;
+  opacity: 0.16;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.menu-content-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 84% 82%, rgba(99, 102, 241, 0.09) 0%, transparent 44%),
+    radial-gradient(circle at 14% 72%, rgba(59, 130, 246, 0.08) 0%, transparent 42%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.menu-content-surface > * {
+  position: relative;
+  z-index: 1;
+}
+
+.night-mode .menu-content-surface {
+  background:
+    radial-gradient(110% 80% at 12% -8%, rgba(99, 102, 241, 0.18) 0%, transparent 58%),
+    radial-gradient(110% 82% at 100% 0%, rgba(168, 85, 247, 0.16) 0%, transparent 62%),
+    linear-gradient(180deg, rgba(5, 10, 28, 0.88) 0%, rgba(10, 16, 37, 0.82) 48%, rgba(12, 20, 43, 0.88) 100%);
+  border-top-color: rgba(100, 116, 139, 0.26);
+}
+
+.night-mode .menu-content-surface::before {
+  opacity: 0.12;
+  background-image:
+    linear-gradient(transparent 95%, rgba(148, 163, 184, 0.1) 95%),
+    linear-gradient(90deg, transparent 95%, rgba(148, 163, 184, 0.08) 95%);
+}
+
+.night-mode .menu-content-surface::after {
+  background:
+    radial-gradient(circle at 84% 82%, rgba(99, 102, 241, 0.16) 0%, transparent 44%),
+    radial-gradient(circle at 14% 72%, rgba(124, 58, 237, 0.14) 0%, transparent 42%);
+}
+
 .content-area { 
   flex: 1; 
   overflow-y: auto; 

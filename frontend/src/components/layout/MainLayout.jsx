@@ -523,7 +523,7 @@ const MainLayout = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-8">
+        <div className="menu-content-surface flex-1 overflow-y-auto p-3 sm:p-5 lg:p-8">
           {showUxTip && (
             <div className={`mb-5 rounded-xl border px-4 py-3 flex items-start justify-between gap-3 ${isNightMode ? 'bg-indigo-950/30 border-indigo-800 text-indigo-100' : 'bg-indigo-50 border-indigo-200 text-indigo-700'}`}>
               <p className="text-sm font-medium">{t('ux.quickTip', 'Tip cepat: tekan Cmd/Ctrl + K untuk pindah halaman lebih cepat.')}</p>
