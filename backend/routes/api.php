@@ -77,6 +77,7 @@ Route::middleware([
     Route::get('/audit-processes/{auditProcess}/dokumen/{tahapNo}/download', [AuditProcessController::class, 'downloadDocument']);
     Route::delete('/audit-processes/{auditProcess}/dokumen/{tahapNo}', [AuditProcessController::class, 'deleteDocument']);
     Route::put('/audit-processes/{auditProcess}/catatan', [AuditProcessController::class, 'updateCatatan']);
+    Route::put('/audit-processes/{auditProcess}/kka-review', [AuditProcessController::class, 'updateKkaReview']);
     Route::put('/audit-processes/{auditProcess}/lhk-stage', [AuditProcessController::class, 'updateLhkStage']);
     Route::put('/audit-processes/{auditProcess}/lhk-review', [AuditProcessController::class, 'updateLhkReview']);
     Route::put('/audit-processes/{auditProcess}/status', [AuditProcessController::class, 'updateStatus']);

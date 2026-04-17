@@ -54,12 +54,15 @@ class AuditProcess extends Model
         'catatan_auditor',
         'dokumen_path',
         'status',
+        'kka_review_approved',
+        'kka_review_note',
         'lhk_stage',
         'lhk_review_approved',
         'lhk_review_note',
     ];
 
     protected $casts = [
+        'kka_review_approved' => 'boolean',
         'lhk_review_approved' => 'boolean',
     ];
 

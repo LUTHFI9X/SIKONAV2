@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Storage;
 class AuditProcessController extends Controller
 {
     private const MAX_TAHAP_KONSULTASI = 13;
+    private const TAHAP_ANALISA_KKA = 7;
+    private const TAHAP_REVIEW_KKA = 8;
     private const TAHAP_DRAFT_LHK = 10;
 
     private function canManageAudit(User $user): bool
@@ -216,6 +218,18 @@ class AuditProcessController extends Controller
 
         $auditProcess->update(['dokumen_path' => $path]);
 
+        if ($tahapNo === self::TAHAP_ANALISA_KKA) {
+            $isReviewFlow = $auditProcess->kka_review_approved !== null
+                || !empty($auditProcess->kka_review_note);
+
+            if (!$isReviewFlow) {
+                $auditProcess->update([
+                    'kka_review_approved' => null,
+                    'kka_review_note' => null,
+                ]);
+            }
+        }
+
         if ($tahapNo === self::TAHAP_DRAFT_LHK) {
             $isReviewFlow = $auditProcess->lhk_stage === 'review'
                 || $auditProcess->lhk_review_approved !== null
@@ -284,6 +298,13 @@ class AuditProcessController extends Controller
                 'lhk_stage' => 'draft',
                 'lhk_review_approved' => null,
                 'lhk_review_note' => null,
+            ]);
+        }
+
+        if ($tahapNo === self::TAHAP_ANALISA_KKA) {
+            $auditProcess->update([
+                'kka_review_approved' => null,
+                'kka_review_note' => null,
             ]);
         }
 
@@ -455,6 +476,42 @@ class AuditProcessController extends Controller
         return response()->json(['audit_process' => $auditProcess->fresh()]);
     }
 
+    public function updateKkaReview(Request $request, AuditProcess $auditProcess)
+    {
+        if (!$this->canAccessAuditProcess($request->user(), $auditProcess)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (!$this->canManageAudit($request->user())) {
+            return response()->json(['message' => 'Anda tidak memiliki izin mengubah review Tahap 8.'], 403);
+        }
+
+        $validated = $request->validate([
+            'review_note' => 'nullable|string|max:5000',
+            'review_approved' => 'required|boolean',
+        ]);
+
+        $hasKka = $auditProcess->documents()->where('tahap_no', self::TAHAP_ANALISA_KKA)->exists();
+        if (!$hasKka) {
+            return response()->json([
+                'message' => 'Upload KKA Tahap 7 terlebih dahulu sebelum melakukan review Tahap 8.',
+            ], 422);
+        }
+
+        $payload = [
+            'kka_review_note' => $validated['review_note'] ?? null,
+            'kka_review_approved' => (bool) $validated['review_approved'],
+        ];
+
+        if ($auditProcess->status === 'pending') {
+            $payload['status'] = 'in_progress';
+        }
+
+        $auditProcess->update($payload);
+
+        return response()->json(['audit_process' => $auditProcess->fresh()]);
+    }
+
     public function notes(Request $request, AuditProcess $auditProcess)
     {
         if (!$this->canAccessAuditProcess($request->user(), $auditProcess)) {
@@ -507,7 +564,7 @@ class AuditProcessController extends Controller
         if ($user->role === 'manajemen') {
             return $tahapNo >= 1
                 && $tahapNo <= self::MAX_TAHAP_KONSULTASI
-                && !in_array($tahapNo, [10, 11], true);
+                && !in_array($tahapNo, [self::TAHAP_REVIEW_KKA, 10, 11], true);
         }
 
         if ($user->role === 'auditee') {
@@ -517,7 +574,7 @@ class AuditProcessController extends Controller
         if ($user->role === 'auditor') {
             return $tahapNo >= 1
                 && $tahapNo <= self::MAX_TAHAP_KONSULTASI
-                && !in_array($tahapNo, [1, 6, 11], true);
+                && !in_array($tahapNo, [1, 6, self::TAHAP_REVIEW_KKA, 11], true);
         }
 
         return false;
