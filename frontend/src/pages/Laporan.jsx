@@ -6,7 +6,7 @@ import Skeleton, { SkeletonText, SkeletonTableRows } from '../components/Skeleto
 import {
   IconFileAlt, IconUpload, IconDownload, IconCheckCircle,
   IconExclamationCircle, IconSearch, IconChevronDown, IconClock,
-  IconEye, IconTrash, IconXCircle, IconArchive, IconSpinner, IconArrowRight
+  IconEye, IconXCircle, IconArchive, IconSpinner, IconArrowRight
 } from '../components/Icons';
 
 /* ═══════════════════════════════════════
@@ -250,35 +250,6 @@ const Laporan = () => {
     setSelectedFile(null);
   };
 
-  const handleDelete = async (id) => {
-    const existing = laporan[id];
-    if (!existing?.tahapNo) {
-      alert('Data dokumen tidak valid.');
-      return;
-    }
-
-    if (existing.status === 'arsip') {
-      alert('Dokumen arsip tidak dapat dihapus atau diganti.');
-      return;
-    }
-
-    const confirmed = await showConfirm('Yakin ingin menghapus draft LHK ini?', {
-      title: 'Hapus Draft LHK',
-      confirmText: 'Hapus',
-      cancelText: 'Batal',
-    });
-    if (!confirmed) return;
-
-    try {
-      await auditAPI.deleteDokumen(id, existing.tahapNo);
-      await fetchData();
-      if (detailId === id) setDetailId(null);
-    } catch (error) {
-      console.error('Hapus draft gagal:', error);
-      alert(error?.response?.data?.message || 'Gagal menghapus draft LHK.');
-    }
-  };
-
   const handleFileSelect = (e) => {
     const file = e.target.files[0]; if (!file) return;
     const validation = validateLhkFile(file);
@@ -303,7 +274,7 @@ const Laporan = () => {
   const handleSubmitUpload = async () => {
     if (!selectedFile || !uploadModal) return;
     if (laporan[uploadModal]?.status === 'arsip') {
-      alert('Dokumen arsip tidak dapat dihapus atau diganti.');
+      alert('Dokumen arsip tidak dapat diganti.');
       return;
     }
     if (!uploadForm.nomorLHK.trim()) { alert('Nomor LHK wajib diisi.'); return; }
@@ -803,9 +774,9 @@ const Laporan = () => {
                         <div>
                           <span className={`text-sm font-bold ${cfg.color}`}>{cfg.label}</span>
                           <p className="text-[10px] text-slate-500 mt-0.5">
-                            {detailLaporan.status === 'draft' && 'Masih berstatus draft. Dokumen masih dapat diganti atau dihapus.'}
-                            {detailLaporan.status === 'review' && 'Sedang masuk tahap review. Keputusan ON/OFF Tahap 11 dikelola di Proses Konsultasi.'}
-                            {detailLaporan.status === 'arsip' && 'Dokumen telah diarsipkan dan tidak dapat dihapus atau diganti.'}
+                            {detailLaporan.status === 'draft' && 'Masih berstatus draft. Dokumen masih dapat diganti.'}
+                            {detailLaporan.status === 'review' && 'Sedang masuk tahap review. Keputusan Review/Finalisasi Tahap 11 dikelola di Proses Konsultasi.'}
+                            {detailLaporan.status === 'arsip' && 'Dokumen telah diarsipkan dan tidak dapat diganti.'}
                           </p>
                         </div>
                       </div>
@@ -919,14 +890,11 @@ const Laporan = () => {
                     <IconDownload className="w-4 h-4" /> Download
                   </button>
                 </div>
-                {/* Row 2 — Auditor actions (Ganti · Hapus · Arsipkan) */}
+                {/* Row 2 — Auditor actions (Ganti · Ke Review / Arsipkan) */}
                 {isAuditor && detailLaporan.status === 'draft' && (
                   <div className="flex items-center gap-2">
                     <button onClick={() => { setDetailId(null); openUploadModal(detailId); }} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-amber-50 text-amber-600 text-sm font-semibold rounded-xl hover:bg-amber-100 border border-amber-200/60 transition-colors">
                       <IconUpload className="w-4 h-4" /> Ganti
-                    </button>
-                    <button onClick={() => handleDelete(detailId)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-red-50 text-red-500 text-sm font-semibold rounded-xl hover:bg-red-100 border border-red-200/60 transition-colors">
-                      <IconTrash className="w-4 h-4" /> Hapus
                     </button>
                     <button onClick={() => handleMoveToReview(detailId)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-indigo-50 text-indigo-600 text-sm font-semibold rounded-xl hover:bg-indigo-100 border border-indigo-200/60 transition-colors">
                       <IconArrowRight className="w-4 h-4" /> Ke Review
@@ -937,9 +905,6 @@ const Laporan = () => {
                   <div className="flex items-center gap-2">
                     <button onClick={() => { setDetailId(null); openUploadModal(detailId); }} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-amber-50 text-amber-600 text-sm font-semibold rounded-xl hover:bg-amber-100 border border-amber-200/60 transition-colors">
                       <IconUpload className="w-4 h-4" /> Ganti
-                    </button>
-                    <button onClick={() => handleDelete(detailId)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-red-50 text-red-500 text-sm font-semibold rounded-xl hover:bg-red-100 border border-red-200/60 transition-colors">
-                      <IconTrash className="w-4 h-4" /> Hapus
                     </button>
                     <button
                       onClick={() => handleAdvanceStatus(detailId)}

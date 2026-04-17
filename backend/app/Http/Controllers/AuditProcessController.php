@@ -216,7 +216,7 @@ class AuditProcessController extends Controller
 
         $auditProcess->update(['dokumen_path' => $path]);
 
-        if ($tahapNo === self::TAHAP_DRAFT_LHK) {
+        if ($tahapNo === self::TAHAP_DRAFT_LHK && $auditProcess->lhk_stage !== 'review') {
             $auditProcess->update([
                 'lhk_stage' => 'draft',
                 'lhk_review_approved' => null,
